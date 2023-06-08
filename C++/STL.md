@@ -23,7 +23,7 @@ STL几乎所有的代码都采用了模板类或者模板函数
 ### STL六大组件
 
 1、容器（containers）
-容器用来存放数据，包括各种数据结构，如vector，list，deque，set，map等。从实现的角度来看，STL容器是一种class template。
+容器用来存放数据，包括各种数据结构，如vector，list，deque，set，map等。从实现的角度来看，STL容器是一种class template
 
 2、算法（algorithms）
 算法包括各种常用的sort，search，copy，erase， find等等。才实现的角度来看，STL算法是一种function template。
