@@ -26,7 +26,7 @@ STL几乎所有的代码都采用了模板类或者模板函数
 容器用来存放数据，包括各种数据结构，如vector，list，deque，set，map等。从实现的角度来看，STL容器是一种class template
 
 2、算法（algorithms）
-算法包括各种常用的sort，search，copy，erase， find等等。才实现的角度来看，STL算法是一种function template。
+算法包括各种常用的sort，search，copy，erase， find等等。才实现的角度来看，STL算法是一种function template
 
 3、迭代器（iterators）
 迭代器作为“泛型指针”，扮演容器和算法之间的粘合剂，用来连接容器和算法。从实现角度来看，迭代器是一种将operator*，operator->，operator++，operator--等指针相关操作进行重载的class template。所有的STL容器都带有自己专属的迭代器。原生指针也是一种迭代器。
