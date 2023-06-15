@@ -95,6 +95,8 @@ bind(fd,(struct sockaddr*)&addr,size);
 
 ### socket模型创建流程图
 
+！！！这个流程图最好可以写出来
+
 ![image-20230611201026121](/home/oem/.config/Typora/typora-user-images/image-20230611201026121.png)
 
 ### socket函数
@@ -122,6 +124,7 @@ int socket(int domain, int type, int protocol);		创建一个 套接字
 
 ```
 #include<sys/socket.h>
+#include<arpa/inet.h>
 
 int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);		给socket绑定一个 地址结构 (IP+port端口号)
 
@@ -140,9 +143,7 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);		给socket
 	addrlen: sizeof(addr) 地址结构的大小。
 
 	返回值：
-
 		成功：0
-
 		失败：-1 errno
 
 ```
@@ -150,6 +151,165 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);		给socket
 ### listen()函数
 
 ```
-#include<
+#include<sys/socket.h>
+int listen(int sockfd, int backlog); 设置同时与服务器建立连接的上限数。（同时进行3次握手的客户端数量）
+	sockfd: socket 函数返回值
+	backlog：上限数值。最大值 128.
+	
+	返回值：
+		成功：0
+		失败：-1 errno	
+
 ```
 
+### accept()函数
+
+```
+#include<sys/socket.h>
+int accept(int socket,struct sockaddr*addr,sockelen_t &addrlen);  阻塞等待客户端建立连接，成功的话，返回一个与客户端成功连接的socket文件描述符。
+
+	sockfd: socket 函数返回值
+	addr：传出参数。成功与服务器建立连接的那个客户端的地址结构（IP+port）
+
+	第三个参数赋值方法:socklen_t clit_addr_len = sizeof(addr);
+    addrlen：传入传出。 &clit_addr_len
+		 入：addr的大小。 出：客户端addr实际大小。
+
+
+	返回值：
+		成功：能与客户端进行数据通信的 socket 对应的文件描述符   。
+		失败： -1 ， errno
+
+```
+
+### connect()函数
+
+```
+int connect(int sockfd,const struct sockadr*addr,socklen_t addrlen);使用现有的socket与服务器建立连接
+	sockfd： socket 函数返回值
+
+		struct sockaddr_in srv_addr;		// 服务器地址结构
+
+		srv_addr.sin_family = AF_INET;
+
+		srv_addr.sin_port = 9527 	跟服务器bind时设定的 port 完全一致。
+
+		inet_pton(AF_INET, "服务器的IP地址"，&srv_adrr.sin_addr.s_addr);
+
+	addr：传入参数。服务器的地址结构
+	addrlen：服务器的地址结构的大小
+
+	返回值：
+
+		成功：0
+		失败：-1 errno
+
+	如果不使用bind绑定客户端地址结构, 采用"隐式绑定".
+
+```
+
+## C/S模型-TCP
+
+### TCP通信流程分析-server
+
+> 1.socket()----创建socket
+>
+> 2.bind()----绑定服务器地址结构
+>
+> 3.listen()----设置监听上限
+>
+> 4.accept()----阻塞监听客户端连接
+>
+> 5.read()----读socket获取客户端数据
+>
+> 6.小写转大写-----toupper()
+>
+> 7.write(fd)
+>
+> 8.close()
+
+### client
+
+> 1.socket()----创建socket
+>
+> 2.connect()----与服务器建立连接
+>
+> 3.write()----写数据到socket
+>
+> 4.read()----读转换后的数据
+>
+> 5.显示读取结果
+>
+> 6.close()
+
+### server的实现
+
+```c
+#include<stdio.h>
+#include<stdlib.h>
+#include<ctype.h>
+#include<string.h>
+#include<unistd.h>
+#include<errno.h>
+#include<pthread.h>
+
+#include<sys/socket.h>
+#include<arpa/inet.h>
+
+#define SERV_PORT 9527
+
+void sys_err(const char*str)
+{
+    perror(str);
+    exit(1);
+}
+int main()
+{
+    
+    int lfd=0,cfd=0;//文件描述符后期与服务器建立连接
+    int ret;//read返回实际读到的字节数
+    char buf[BUFSIZ];
+
+    struct sockaddr_in serv_addr,clit_addr;
+    socklen_t clit_addr_len;
+
+    serv_addr.sin_family=AF_INET;//和socket的第一个参数一样
+    serv_addr.sin_port=htons(SERV_PORT);
+    serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+    
+    lfd=socket(AF_INET,SOCK_STREAM,0);//创建socket
+    if(lfd==-1)//要检查函数是否调用成功
+    {
+        sys_err("socket error");
+    }
+    bind(lfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr));
+    
+    listen(lfd,128);
+
+    clit_addr_len=sizeof(clit_addr);
+    cfd=accept(lfd,(struct sockaddr *)&clit_addr,&clit_addr_len);//第三个参数客户端地址结构长度
+    if(cfd==-1)//要检查函数是否调用成功
+    {
+        sys_err("accept error");
+    }
+
+    while(1){
+    ret=read(cfd,buf,sizeof(buf));
+    write(STDOUT_FILENO,buf,ret);
+    for(int i=0;i<ret;i++)
+    {
+        buf[i]=toupper(buf[i]);
+    }
+    write(cfd,buf,ret);
+    }
+    close(lfd);
+    close(cfd);
+    return 0;
+}
+```
+
+![image-20230615212206941](/home/oem/.config/Typora/typora-user-images/image-20230615212206941.png)
+
+![image-20230615212250545](/home/oem/.config/Typora/typora-user-images/image-20230615212250545.png)
+
+借助nc命令+主机IP地址+你指定的服务器端口号，就是在与你的服务器连接
