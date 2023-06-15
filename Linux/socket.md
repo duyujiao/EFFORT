@@ -84,7 +84,7 @@ addr.sin_port=htons(9527);//端口号
 //inet_pton(AF_INET,"192.157.22.45",(void*)&dst);//这里因为结构体嵌套结构,所以必须这样初始化
 //addr.sin_addr.s_addr=dst;
 
-//一般可以使用一个宏INADDR_ANY,代表取出系统中有效的ip地址,默认取出的是二进制类型
+//一般可以使用一个网络地址宏INADDR_ANY,代表取出系统中有效的任意ip地址,默认取出的是二进制类型
 addr.sin_addr.s_addr=htonl(INADDR_ANY);
 bind(fd,(struct sockaddr*)&addr,size);
 ```
@@ -188,15 +188,14 @@ int accept(int socket,struct sockaddr*addr,sockelen_t &addrlen);  阻塞等待�
 int connect(int sockfd,const struct sockadr*addr,socklen_t addrlen);使用现有的socket与服务器建立连接
 	sockfd： socket 函数返回值
 
-		struct sockaddr_in srv_addr;		// 服务器地址结构
-
+		struct sockaddr_in srv_addr;		// 服务器地址结
 		srv_addr.sin_family = AF_INET;
-
 		srv_addr.sin_port = 9527 	跟服务器bind时设定的 port 完全一致。
 
 		inet_pton(AF_INET, "服务器的IP地址"，&srv_adrr.sin_addr.s_addr);
 
 	addr：传入参数。服务器的地址结构
+
 	addrlen：服务器的地址结构的大小
 
 	返回值：
@@ -244,10 +243,85 @@ int connect(int sockfd,const struct sockadr*addr,socklen_t addrlen);使用现有
 
 ### server的实现
 
+> STDOUT_FILENO是一个常量，通常在C语言中使用，表示标准输出流的文件描述符。在Unix和Linux系统中，每个进程都有三个默认打开的文件描述符：标准输入（stdin）、标准输出（stdout）和标准错误（stderr）。其中，STDOUT_FILENO指向标准输出流的文件描述符，通常被用于向终端或文件中输出数据。在C语言中，可以使用printf函数将数据输出到标准输出流中，也可以使用write函数通过STDOUT_FILENO将数据输出到标准输出流中。
+
+
+
+> ```c
+> #include<stdio.h>
+> #include<stdlib.h>
+> #include<ctype.h>
+> #include<string.h>
+> #include<unistd.h>
+> #include<errno.h>
+> #include<pthread.h>
+> 
+> #include<sys/socket.h>
+> #include<arpa/inet.h>
+> 
+> #define SERV_PORT 9527
+> 
+> void sys_err(const char*str)
+> {
+>     perror(str);
+>     exit(1);
+> }
+> int main()
+> {
+>     
+>     int lfd=0,cfd=0;//文件描述符后期与服务器建立连接
+>     int ret;//read返回实际读到的字节数
+>     char buf[BUFSIZ];
+> 
+>     struct sockaddr_in serv_addr,clit_addr;
+>     socklen_t clit_addr_len;
+> 
+>     serv_addr.sin_family=AF_INET;//和socket的第一个参数一样
+>     serv_addr.sin_port=htons(SERV_PORT);
+>     serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+>     
+>     lfd=socket(AF_INET,SOCK_STREAM,0);//创建socket
+>     if(lfd==-1)//要检查函数是否调用成功
+>     {
+>         sys_err("socket error");
+>     }
+>     bind(lfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr));
+>     
+>     listen(lfd,128);
+> 
+>     clit_addr_len=sizeof(clit_addr);
+>     cfd=accept(lfd,(struct sockaddr *)&clit_addr,&clit_addr_len);//第三个参数客户端地址结构长度
+>     if(cfd==-1)//要检查函数是否调用成功
+>     {
+>         sys_err("accept error");
+>     }
+> 
+>     while(1){
+>     ret=read(cfd,buf,sizeof(buf));
+>     write(STDOUT_FILENO,buf,ret);
+>     for(int i=0;i<ret;i++)
+>     {
+>         buf[i]=toupper(buf[i]);
+>     }
+>     write(cfd,buf,ret);
+>     }
+>     close(lfd);
+>     close(cfd);
+>     return 0;
+> }
+> ```
+>
+> ![image-20230615212206941](/home/oem/.config/Typora/typora-user-images/image-20230615212206941.png)
+>
+> ![image-20230615212250545](/home/oem/.config/Typora/typora-user-images/image-20230615212250545.png)
+>
+> 借助nc命令+主机IP地址+你指定的服务器端口号，就是在与你的服务器连接
+
+### client实现
+
 ```c
 #include<stdio.h>
 #include<stdlib.h>
-#include<ctype.h>
 #include<string.h>
 #include<unistd.h>
 #include<errno.h>
@@ -258,58 +332,45 @@ int connect(int sockfd,const struct sockadr*addr,socklen_t addrlen);使用现有
 
 #define SERV_PORT 9527
 
-void sys_err(const char*str)
+void sys_err(const char *str)
 {
     perror(str);
     exit(1);
 }
-int main()
+
+int main(int argc,char *argv[])
 {
-    
-    int lfd=0,cfd=0;//文件描述符后期与服务器建立连接
-    int ret;//read返回实际读到的字节数
+    int cfd;
+    int count=10;
     char buf[BUFSIZ];
+    struct sockaddr_in serv_addr;//服务器地址结构
+    serv_addr.sin_family=AF_INET;
+    serv_addr.sin_port=htons(SERV_PORT);//服务器端口
+    inet_pton(AF_INET,"127.0.0.1",&serv_addr.sin_addr.s_addr);//将ip地址转换成网络字节序
+    //serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
 
-    struct sockaddr_in serv_addr,clit_addr;
-    socklen_t clit_addr_len;
-
-    serv_addr.sin_family=AF_INET;//和socket的第一个参数一样
-    serv_addr.sin_port=htons(SERV_PORT);
-    serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-    
-    lfd=socket(AF_INET,SOCK_STREAM,0);//创建socket
-    if(lfd==-1)//要检查函数是否调用成功
+    cfd=socket(AF_INET,SOCK_STREAM,0);
+    if(cfd==-1)
     {
         sys_err("socket error");
     }
-    bind(lfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr));
-    
-    listen(lfd,128);
 
-    clit_addr_len=sizeof(clit_addr);
-    cfd=accept(lfd,(struct sockaddr *)&clit_addr,&clit_addr_len);//第三个参数客户端地址结构长度
-    if(cfd==-1)//要检查函数是否调用成功
+    int ret=connect(cfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr));
+    if(ret!=0)
     {
-        sys_err("accept error");
+        sys_err("connect error");
     }
 
-    while(1){
-    ret=read(cfd,buf,sizeof(buf));
-    write(STDOUT_FILENO,buf,ret);
-    for(int i=0;i<ret;i++)
+    while(--count)
     {
-        buf[i]=toupper(buf[i]);
+        write(cfd,"hello\n",6);
+        ret=read(cfd,buf,sizeof(buf));
+        write(STDOUT_FILENO,buf,ret);
+        sleep(1);
     }
-    write(cfd,buf,ret);
-    }
-    close(lfd);
     close(cfd);
+
     return 0;
 }
 ```
 
-![image-20230615212206941](/home/oem/.config/Typora/typora-user-images/image-20230615212206941.png)
-
-![image-20230615212250545](/home/oem/.config/Typora/typora-user-images/image-20230615212250545.png)
-
-借助nc命令+主机IP地址+你指定的服务器端口号，就是在与你的服务器连接
