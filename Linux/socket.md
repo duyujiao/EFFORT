@@ -108,7 +108,7 @@ int socket(int domain, int type, int protocol);		创建一个 套接字
 
 	domain所选用的地址协议：AF_INET、AF_INET6、AF_UNIX--本地套接字
 
-	type创建套接字选的数据传输协议：SOCK_STREAM（TCP)、SOCK_DGRAM(UDP)
+	type创建套接字选的数据传输协议：SOCK_STREAM（代表协议TCP)、SOCK_DGRAM(代表协议UDP)
 
 	protocol选的代表协议: 0 
 
@@ -129,13 +129,11 @@ int socket(int domain, int type, int protocol);		创建一个 套接字
 int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);		给socket绑定一个 地址结构 (IP+port端口号)
 
 	sockfd: socket 函数返回值
-		/初始化
+	
+		//初始化
 		struct sockaddr_in addr;
-
 		addr.sin_family = AF_INET;
-
 		addr.sin_port = htons(8888);
-
 		addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	addr: 传入参数(struct sockaddr *)&addr
@@ -369,7 +367,6 @@ int main(int argc,char *argv[])
         sleep(1);
     }
     close(cfd);
-
     return 0;
 }
 ```
