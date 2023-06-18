@@ -371,3 +371,4 @@ int main(int argc,char *argv[])
 }
 ```
 
+## 错误处理函数的封装
