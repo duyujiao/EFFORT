@@ -389,7 +389,7 @@ int main(int argc,char *argv[])
 
 命名方式：系统调用函数首字符大写, 方便查看man手册
 
- 如：Listen()、Accept();
+ 如：Listen()、Accept()
 
 
 
