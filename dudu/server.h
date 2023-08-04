@@ -25,7 +25,8 @@ class server
     //服务器ip
     string server_ip;
     //保存所有的套接字描述符
-    vector<int> sock_arr;
+    //vector<int> sock_arr;
+      static vector<bool> sock_arr;//改为了静态成员变量，且类型变为vector<bool>
     public:
     //构造函数
     server(int port,string ip);

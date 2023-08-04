@@ -13,14 +13,20 @@ using namespace std;
 #include"server.h"
 
 
+vector<bool> server::sock_arr(10000,false);//将10000个位置都设为false，sock_arr[i]=false表示套接字描述符i未打开（因此不能关闭）
 //构造函数
 server::server(int port,string ip):server_port(port),server_ip(ip){}
 
 //析构函数
 server::~server()
 {
-    for(auto conn:sock_arr)
-    close(conn);
+    // for(auto conn:sock_arr)
+    // close(conn);
+    // close(server_sockfd);
+    for(int i=0;i<sock_arr.size();i++){
+        if(sock_arr[i])
+            close(i);
+    }
     close(server_sockfd);
 }
 
@@ -81,9 +87,21 @@ void server::RecvMsg(int conn){
         memset(buffer,0,sizeof(buffer));
         int len = recv(conn, buffer, sizeof(buffer),0);
         //客户端发送exit或者异常结束时，退出
-        if(strcmp(buffer,"exit")==0 || len<=0)
+        if(strcmp(buffer,"exit")==0 || len<=0){
+            close(conn);
+            sock_arr[conn]=false;
             break;
+        }
         cout<<"收到套接字描述符为"<<conn<<"发来的信息："<<buffer<<endl;
+        //回复客户端
+        string ans="收到";
+        int ret = send(conn,ans.c_str(),ans.length(),0);
+        //服务器收到exit或者异常关闭套接字描述符
+        if(ret<=0){
+            close(conn);
+            sock_arr[conn]=false;
+            break;
+        }
     }
 }
 
