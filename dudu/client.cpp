@@ -37,6 +37,8 @@ void client::run(){
     }
     cout<<"连接服务器成功\n";
 
+    HandleClient(sock);
+
     //创建发送线程和接收线程
     thread send_t(SendMsg,sock),recv_t(RecvMsg,sock);
     send_t.join();
@@ -72,6 +74,57 @@ void client::RecvMsg(int conn){
     }
 }
 
+
+void client::HandleClient(int conn)
+{
+    int choice;
+    string name,pass,pass1;
+    //bool if_login=false;//记录是否登录成功
+
+    cout<<" ------------------\n";
+    cout<<"|                  |\n";
+    cout<<"| 请输入你要的选项:   |\n";
+    cout<<"|    0:退出         |\n";
+    cout<<"|    1:登录         |\n";
+    cout<<"|    2:注册         |\n";
+    cout<<"|                  |\n";
+    cout<<" ------------------ \n\n";
+
+    //开始处理事物
+    while(1)
+    {
+        //if(if_login)
+        //break;
+        cin>>choice;
+        if(choice==0)
+        {
+            break;
+        }
+        //注册
+        else if(choice==2)
+        {
+            cout<<"注册的用户名：";
+            cin>>name;
+            while(1)
+            {
+                cout<<"密码:";
+                cin>>pass;
+                cout<<"确认密码:";
+                cin>>pass1;
+                if(pass==pass1)
+                break;
+                else
+                cout<<"两次密码不一致！\n\n";
+            }
+            name="name:"+name;
+            pass="pass:"+pass;
+            string str=name+pass;
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"注册成功\n";
+            cout<<"\n请继续输入你需要的选项:";
+        }
+    }
+}
 
 // int main()
 // {

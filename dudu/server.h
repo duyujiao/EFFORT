@@ -15,6 +15,8 @@
 #include <thread>
 #include <vector>
 using namespace std;
+
+#include"global.h"
 class server
 {
     private:
@@ -36,6 +38,7 @@ class server
     void run();
     //子线程工作的静态函数
     static void RecvMsg(int conn);
+    static void HandleRequest(int conn,string str);
 };
 
 

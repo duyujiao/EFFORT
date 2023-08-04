@@ -14,6 +14,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <mysql/mysql.h>  
 using namespace std;
 
 #endif
