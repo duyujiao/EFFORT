@@ -140,7 +140,7 @@ void server::HandleRequest(int conn,string str)
         int p1=str.find("login"),p2=str.find("pass:");
         name=str.substr(p1+5,p2-5);
         pass=str.substr(p2+5,str.length()-p2-4);
-        
+        //
     }
 }
 
