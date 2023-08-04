@@ -111,8 +111,8 @@ void server::HandleRequest(int conn,string str)
 {
     char buffer[1000];
     string name,pass;
-    //bool if_login=false;//记录当前服务对象是否登陆成功
-    //string login_name;//记录当前服务对象的名字
+    bool if_login=false;//记录当前服务对象是否登陆成功
+    string login_name;//记录当前服务对象的名字
     //string target_name;//记录发送信息时候目标用户的名字
     //int group_num;//记录群号
 
@@ -120,6 +120,7 @@ void server::HandleRequest(int conn,string str)
     MYSQL *con=mysql_init(NULL);
     mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
 
+    //注册
     if(str.find("name:")!=str.npos)
     {
         int p1=str.find("name:"),p2=str.find("pass:");
@@ -132,6 +133,14 @@ void server::HandleRequest(int conn,string str)
         search+="\");";
         cout<<"sql语句:"<<search<<endl<<endl;
         mysql_query(con,search.c_str());
+    }
+    //登陆
+    else if(str.find("login")!=str.npos)
+    {
+        int p1=str.find("login"),p2=str.find("pass:");
+        name=str.substr(p1+5,p2-5);
+        pass=str.substr(p2+5,str.length()-p2-4);
+        
     }
 }
 
