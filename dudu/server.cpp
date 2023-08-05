@@ -95,6 +95,7 @@ void server::RecvMsg(int conn){
             break;
         }
         cout<<"收到套接字描述符为"<<conn<<"发来的信息："<<buffer<<endl;
+                                  
          string str(buffer);
         HandleRequest(conn,str);
         //回复客户端
@@ -132,7 +133,6 @@ void server::HandleRequest(int conn,string str)
         // int p1=str.find("name:"),p2=str.find("pass:");
         // name=str.substr(p1+5,p2-5);
         // pass=str.substr(p2+5,str.length()-p2-4);
-        
 
         // string search="INSERT INTO USER VALUES (\"";
         // search+=name;
@@ -142,35 +142,38 @@ void server::HandleRequest(int conn,string str)
 
         User user = User::fromjson(str);
         string search = "INSERT INTO USER VALUES (";
-    search += "'" + user.name + "', ";
-    search += "'" + user.pass + "');";
+        search += "'" + user.name + "', ";
+        search += "'" + user.pass + "');";
         cout<<"sql语句:"<<search<<endl<<endl;
         mysql_query(con,search.c_str());
     }
    //登录
     else if(str.find("login")!=str.npos){
-        int p1=str.find("login"),p2=str.find("pass:");
-        name=str.substr(p1+5,p2-5);
-        pass=str.substr(p2+5,str.length()-p2-4);
-        string search="SELECT * FROM USER WHERE NAME=\"";
-        search+=name;
-        search+="\";";
+        // int p1=str.find("login"),p2=str.find("pass:");
+        // name=str.substr(p1+5,p2-5);
+        // pass=str.substr(p2+5,str.length()-p2-4);
+        // string search="SELECT * FROM USER WHERE NAME=\"";
+        // search+=name;
+        // search+="\";";
+      User user = User::fromjson(str);
+      string search="SELECT * FROM USER WHERE name='" + user.name + "'";
         cout<<"sql语句:"<<search<<endl;
         auto search_res=mysql_query(con,search.c_str());
         auto result=mysql_store_result(con);
         int col=mysql_num_fields(result);//获取列数
         int row=mysql_num_rows(result);//获取行数
+        
         //查询到用户名
         if(search_res==0&&row!=0){
             cout<<"查询成功\n";
             auto info=mysql_fetch_row(result);//获取一行的信息
             cout<<"查询到用户名:"<<info[0]<<" 密码:"<<info[1]<<endl;
             //密码正确
-            if(info[1]==pass){
+            if(info[1]==user.pass){
                 cout<<"登录密码正确\n\n";
                 string str1="ok";
                 if_login=true;
-                login_name=name;//记录下当前登录的用户名
+                login_name=user.name;//记录下当前登录的用户名
                 send(conn,str1.c_str(),str1.length()+1,0);
             }
             //密码错误
@@ -186,6 +189,7 @@ void server::HandleRequest(int conn,string str)
             char str1[100]="wrong";
             send(conn,str1,strlen(str1),0);
         }
+        mysql_free_result(result);
     }
 }
 
