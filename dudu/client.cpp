@@ -11,6 +11,8 @@
 #include <iostream>
 using namespace std;
 #include"client.h"
+#include"class.hpp"
+
 client::client(int port,string ip):server_port(port),server_ip(ip){}
 client::~client()
 {
@@ -117,9 +119,15 @@ void client::HandleClient(int conn)
                 else
                 cout<<"两次密码不一致！\n\n";
             }
-            name="name:"+name;
-            pass="pass:"+pass;
-            string str=name+pass;
+             name="name:"+name;
+             pass="pass:"+pass;
+            // string str=name+pass;
+            User user;
+            user.name=name;
+            user.pass=pass;
+            string str=user.tojson();
+         
+
             send(conn,str.c_str(),str.length(),0);
             cout<<"注册成功\n";
             cout<<"\n请继续输入你需要的选项:";

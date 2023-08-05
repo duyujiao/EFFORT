@@ -11,6 +11,8 @@
 #include <iostream>
 using namespace std;
 #include"server.h"
+#include"mysql.hpp"
+#include"class.hpp"
 
 
 vector<bool> server::sock_arr(10000,false);//将10000个位置都设为false，sock_arr[i]=false表示套接字描述符i未打开（因此不能关闭）
@@ -120,16 +122,28 @@ void server::HandleRequest(int conn,string str)
     MYSQL *con=mysql_init(NULL);
     mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
 
+    // MySQL sql;
+    // sql.connect("localhost","root","40111004","chatroom");
+
      //注册
+     //str.npos是std::string类的一个静态常量，表示一个无效的位置或未找到的位置
+     //不等于说明找到了"name:"
     if(str.find("name:")!=str.npos){
-        int p1=str.find("name:"),p2=str.find("pass:");
-        name=str.substr(p1+5,p2-5);
-        pass=str.substr(p2+5,str.length()-p2-4);
-        string search="INSERT INTO USER VALUES (\"";
-        search+=name;
-        search+="\",\"";
-        search+=pass;
-        search+="\");";
+        // int p1=str.find("name:"),p2=str.find("pass:");
+        // name=str.substr(p1+5,p2-5);
+        // pass=str.substr(p2+5,str.length()-p2-4);
+        
+
+        // string search="INSERT INTO USER VALUES (\"";
+        // search+=name;
+        // search+="\",\"";
+        // search+=pass;
+        // search+="\");";
+
+        User user = User::fromjson(str);
+        string search = "INSERT INTO USER VALUES (";
+    search += "'" + user.name + "', ";
+    search += "'" + user.pass + "');";
         cout<<"sql语句:"<<search<<endl<<endl;
         mysql_query(con,search.c_str());
     }
