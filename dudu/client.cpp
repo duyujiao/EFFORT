@@ -134,7 +134,7 @@ void client::HandleClient(int conn)
                 cin>>pass;
                 //格式化
                 string str="login"+name;
-                str+="pass";
+                str+="pass:";
                 str+=pass;
                 send(sock,str.c_str(),str.length(),0);//发送登录信息
                 char buffer[1000];
