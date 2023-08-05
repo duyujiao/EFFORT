@@ -140,10 +140,15 @@ void client::HandleClient(int conn)
                 cin>>name;
                 cout<<"密码：";
                 cin>>pass;
-                //格式化
-                string str="login"+name;
-                str+="pass:";
-                str+=pass;
+                // //格式化
+                // string str="login"+name;
+                // str+="pass:";
+                // str+=pass;
+                User user;
+                user.name="login"+name;
+                user.pass="pass:"+pass;
+               string str=user.tojson();
+
                 send(sock,str.c_str(),str.length(),0);//发送登录信息
                 char buffer[1000];
                 memset(buffer,0,sizeof(buffer));
@@ -153,7 +158,7 @@ void client::HandleClient(int conn)
                 if(recv_str.substr(0,2)=="ok")
                 {
                     if_login=true;
-                    login_name=name;
+                    login_name=user.name;
                     cout<<"登陆成功\n\n";
                     break;
                 }
