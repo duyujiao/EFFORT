@@ -70,7 +70,7 @@ void server::run()
             perror("connect");//输出错误原因
             exit(1);//结束程序
         }
-        cout<<"文件描述符为"<<conn<<"的客户端成功连接\n";
+        std::cout<<"文件描述符为"<<conn<<"的客户端成功连接\n";
         sock_arr.push_back(conn);
         //创建线程
         thread t(server::RecvMsg,conn);
@@ -94,7 +94,7 @@ void server::RecvMsg(int conn){
             sock_arr[conn]=false;
             break;
         }
-        cout<<"收到套接字描述符为"<<conn<<"发来的信息："<<buffer<<endl;
+        std::cout<<"收到套接字描述符为"<<conn<<"发来的信息："<<buffer<<endl;
                                   
          string str(buffer);
         HandleRequest(conn,str);
@@ -144,7 +144,7 @@ void server::HandleRequest(int conn,string str)
         string search = "INSERT INTO USER VALUES (";
         search += "'" + user.name + "', ";
         search += "'" + user.pass + "');";
-        cout<<"sql语句:"<<search<<endl<<endl;
+        std::cout<<"sql语句:"<<search<<endl<<endl;
         mysql_query(con,search.c_str());
     }
    //登录
@@ -155,9 +155,9 @@ void server::HandleRequest(int conn,string str)
         // string search="SELECT * FROM USER WHERE NAME=\"";
         // search+=name;
         // search+="\";";
-      User user = User::fromjson(str);
-      string search="SELECT * FROM USER WHERE name='" + user.name + "'";
-        cout<<"sql语句:"<<search<<endl;
+        User user = User::fromjson(str);
+        string search="SELECT * FROM USER WHERE name='" + user.name + "'";
+        std::cout<<"sql语句:"<<search<<endl;
         auto search_res=mysql_query(con,search.c_str());
         auto result=mysql_store_result(con);
         int col=mysql_num_fields(result);//获取列数
@@ -165,33 +165,108 @@ void server::HandleRequest(int conn,string str)
         
         //查询到用户名
         if(search_res==0&&row!=0){
-            cout<<"查询成功\n";
+            std::cout<<"查询成功\n";
             auto info=mysql_fetch_row(result);//获取一行的信息
-            cout<<"查询到用户名:"<<info[0]<<" 密码:"<<info[1]<<endl;
+            std::cout<<"查询到用户名:"<<info[0]<<" 密码:"<<info[1]<<endl;
             //密码正确
             if(info[1]==user.pass){
-                cout<<"登录密码正确\n\n";
+                std::cout<<"登录密码正确\n\n";
                 string str1="ok";
                 if_login=true;
                 login_name=user.name;//记录下当前登录的用户名
                 send(conn,str1.c_str(),str1.length()+1,0);
+               // ManageFriends(conn,str);
+    
+                //recv(conn,)
+
+               if (str.find("add:") != str.npos)
+    {
+        Friend friendObj = Friend::fromjson(str);
+        // 处理添加好友逻辑
+        cout << "收到添加好友请求，好友名字：" << friendObj.nameadd << endl;
+        // 添加好友的具体实现，请在这里完成
+        //server::AddFriend(friendObj.nameadd);
+        //连接MYSQL数据库
+        MYSQL *con=mysql_init(NULL);
+        mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
+        string search = "INSERT INTO friends (user, friend) VALUES ('" + friendObj.nameuser.substr(5) + "', '" +friendObj.nameadd+ "');";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+        cout << "已添加好友：" << friendObj.nameadd  << endl << endl;
+
+    } 
+    else if (str.find("delete:") != str.npos) 
+    {
+        Friend friendObj = Friend::fromjson(str.substr(7));
+        // 处理删除好友逻辑
+        cout << "收到删除好友请求，好友名字：" << friendObj.nameadd << endl;
+        // 删除好友的具体实现，请在这里完成
+        //server::DeleteFriend(friendObj.nameadd);
+        //连接MYSQL数据库
+        MYSQL *con=mysql_init(NULL);
+        mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
+        string search = "DELETE FROM friends WHERE user='" + friendObj.nameuser.substr(5) + "' AND friend='" +friendObj.nameadd+ "';";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+        cout << "已删除好友：" << friendObj.nameadd << endl << endl;
+
+    } 
+    else if (str == "query") 
+    {
+         Friend friendObj = Friend::fromjson(str.substr(5));
+        // 处理查询好友逻辑
+        cout << "收到查询好友请求" << endl;
+        // 查询好友的具体实现，请在这里完成
+        //server::QueryFriends(conn);
+         //连接MYSQL数据库
+        MYSQL *con=mysql_init(NULL);
+        mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
+        string search = "SELECT friend FROM friends WHERE user='" + friendObj.nameuser.substr(5) + "';";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+        auto result = mysql_store_result(con);
+        int numFriends = mysql_num_rows(result);
+        if (numFriends > 0) {
+        cout << "已查询到以下好友：" << endl;
+        for (int i = 0; i < numFriends; i++) {
+            auto row = mysql_fetch_row(result);
+            string friendName = row[0];
+            cout << friendName << endl;
+            // 将好友信息发送给客户端
+            send(conn, friendName.c_str(), friendName.length(), 0);
+        }
+    } else {
+        cout << "未查询到好友" << endl;
+        // 发送未查询到好友的信息给客户端
+        string message = "No friends found";
+        send(conn, message.c_str(), message.length(), 0);
+    }
+    cout << endl;
+    mysql_free_result(result);
+    }
             }
             //密码错误
             else{
-                cout<<"登录密码错误\n\n";
+                std::cout<<"登录密码错误\n\n";
                 char str1[100]="wrong";
                 send(conn,str1,strlen(str1),0);
             }
         }
         //没找到用户名
         else{
-            cout<<"查询失败\n\n";
+            printf("1111");
+            std::cout<<"查询失败\n\n";
             char str1[100]="wrong";
             send(conn,str1,strlen(str1),0);
         }
         mysql_free_result(result);
     }
+
 }
+
+    
+
+
 
 // int main()
 // {

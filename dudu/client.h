@@ -16,6 +16,5 @@ class client{
         static void RecvMsg(int conn);//接收线程
 
         void HandleClient(int conn);//该函数将在与服务器连接建立之后开始工作，与用户进行交互并处理各项事务
-        
 };
 #endif

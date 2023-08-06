@@ -39,6 +39,11 @@ class server
     //子线程工作的静态函数
     static void RecvMsg(int conn);
     static void HandleRequest(int conn,string str);
+    static void ManageFriends(int conn,const string& str);
+    static void AddFriend(const string& friendName); 
+    static void DeleteFriend(const string& friendName);
+    static void QueryFriends(int conn);
+
 };
 
 
