@@ -9,12 +9,13 @@
 #include <fcntl.h>
 #include <sys/shm.h>
 #include <iostream>
-using namespace std;
+// using namespace std;
 #include"server.h"
 #include"mysql.hpp"
 #include"class.hpp"
 
-
+unordered_map<string,int> server::name_sock_map;//名字和套接字描述符
+pthread_mutex_t server::name_sock_mutx;//互斥锁，锁住需要修改name_sock_map的临界区
 vector<bool> server::sock_arr(10000,false);//将10000个位置都设为false，sock_arr[i]=false表示套接字描述符i未打开（因此不能关闭）
 //构造函数
 server::server(int port,string ip):server_port(port),server_ip(ip){}
@@ -80,8 +81,51 @@ void server::run()
 
 //子线程工作的静态函数
 //注意，前面不用加static，否则会编译报错
-void server::RecvMsg(int conn){
-    //接收缓冲区
+// void server::RecvMsg(int conn){
+//     //接收缓冲区
+//     char buffer[1000];
+//     //不断接收数据
+//     while(1)
+//     {
+//         memset(buffer,0,sizeof(buffer));
+//         int len = recv(conn, buffer, sizeof(buffer),0);
+//         //客户端发送exit或者异常结束时，退出
+//         if(strcmp(buffer,"exit")==0 || len<=0){
+//             close(conn);
+//             sock_arr[conn]=false;
+//             break;
+//         }
+//         std::cout<<"收到套接字描述符为"<<conn<<"发来的信息："<<buffer<<endl;
+                                  
+//          string str(buffer);
+//         HandleRequest(conn,str);
+//         //回复客户端
+//         string ans="收到";
+//         int ret = send(conn,ans.c_str(),ans.length(),0);
+//         //服务器收到exit或者异常关闭套接字描述符
+//         if(ret<=0){
+//             close(conn);
+//             sock_arr[conn]=false;
+//             break;
+//         }
+//     }
+// }
+
+
+void server::RecvMsg(int conn)
+{
+    //元组类型，四个成员分别为if_login,login_name,target_name,target_conn
+    tuple<bool,string,string,int> info;
+    /*
+        bool if_login;//记录当前服务对象是否成功登录
+        string login_name;//记录当前服务对象的名字
+        string target_name;//记录目标对象的名字
+        int target_conn;//目标对象的套接字描述符
+    */
+   get<0>(info)=false;//把if_login置为false
+   get<3>(info)=-1;//target_conn置为-1
+
+   //接收缓冲区
     char buffer[1000];
     //不断接收数据
     while(1)
@@ -89,35 +133,27 @@ void server::RecvMsg(int conn){
         memset(buffer,0,sizeof(buffer));
         int len = recv(conn, buffer, sizeof(buffer),0);
         //客户端发送exit或者异常结束时，退出
-        if(strcmp(buffer,"exit")==0 || len<=0){
+        if(strcmp(buffer,"content:exit")==0 || len<=0){
             close(conn);
             sock_arr[conn]=false;
             break;
         }
         std::cout<<"收到套接字描述符为"<<conn<<"发来的信息："<<buffer<<endl;
-                                  
-         string str(buffer);
-        HandleRequest(conn,str);
-        //回复客户端
-        string ans="收到";
-        int ret = send(conn,ans.c_str(),ans.length(),0);
-        //服务器收到exit或者异常关闭套接字描述符
-        if(ret<=0){
-            close(conn);
-            sock_arr[conn]=false;
-            break;
-        }
+        string str(buffer);
+        HandleRequest(conn,str,info);
     }
+
 }
 
-void server::HandleRequest(int conn,string str)
+void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &info)
 {
     char buffer[1000];
     string name,pass;
-    bool if_login=false;//记录当前服务对象是否登陆成功
-    string login_name;//记录当前服务对象的名字
-    //string target_name;//记录发送信息时候目标用户的名字
-    //int group_num;//记录群号
+    //把参数提出来，方便操作
+    bool if_login=get<0>(info);//记录当前服务对象是否成功登录
+    string login_name=get<1>(info);//记录当前服务对象的名字
+    string target_name=get<2>(info);//记录目标对象的名字
+    int target_conn=get<3>(info);//目标对象的套接字描述符
 
     //连接MYSQL数据库
     MYSQL *con=mysql_init(NULL);
@@ -148,6 +184,7 @@ void server::HandleRequest(int conn,string str)
         mysql_query(con,search.c_str());
     }
    //登录
+
     else if(str.find("login")!=str.npos){
         // int p1=str.find("login"),p2=str.find("pass:");
         // name=str.substr(p1+5,p2-5);
@@ -174,76 +211,12 @@ void server::HandleRequest(int conn,string str)
                 string str1="ok";
                 if_login=true;
                 login_name=user.name;//记录下当前登录的用户名
+
+                pthread_mutex_lock(&name_sock_mutx);//上锁
+                name_sock_map[login_name]=conn;//记录下名字和文件描述符的对应关系
+                pthread_mutex_unlock(&name_sock_mutx);//解锁
                 send(conn,str1.c_str(),str1.length()+1,0);
-               // ManageFriends(conn,str);
-    
-                //recv(conn,)
-
-               if (str.find("add:") != str.npos)
-    {
-        Friend friendObj = Friend::fromjson(str);
-        // 处理添加好友逻辑
-        cout << "收到添加好友请求，好友名字：" << friendObj.nameadd << endl;
-        // 添加好友的具体实现，请在这里完成
-        //server::AddFriend(friendObj.nameadd);
-        //连接MYSQL数据库
-        MYSQL *con=mysql_init(NULL);
-        mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
-        string search = "INSERT INTO friends (user, friend) VALUES ('" + friendObj.nameuser.substr(5) + "', '" +friendObj.nameadd+ "');";
-        cout << "SQL语句:" << search << endl;
-        mysql_query(con, search.c_str());
-        cout << "已添加好友：" << friendObj.nameadd  << endl << endl;
-
-    } 
-    else if (str.find("delete:") != str.npos) 
-    {
-        Friend friendObj = Friend::fromjson(str.substr(7));
-        // 处理删除好友逻辑
-        cout << "收到删除好友请求，好友名字：" << friendObj.nameadd << endl;
-        // 删除好友的具体实现，请在这里完成
-        //server::DeleteFriend(friendObj.nameadd);
-        //连接MYSQL数据库
-        MYSQL *con=mysql_init(NULL);
-        mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
-        string search = "DELETE FROM friends WHERE user='" + friendObj.nameuser.substr(5) + "' AND friend='" +friendObj.nameadd+ "';";
-        cout << "SQL语句:" << search << endl;
-        mysql_query(con, search.c_str());
-        cout << "已删除好友：" << friendObj.nameadd << endl << endl;
-
-    } 
-    else if (str == "query") 
-    {
-         Friend friendObj = Friend::fromjson(str.substr(5));
-        // 处理查询好友逻辑
-        cout << "收到查询好友请求" << endl;
-        // 查询好友的具体实现，请在这里完成
-        //server::QueryFriends(conn);
-         //连接MYSQL数据库
-        MYSQL *con=mysql_init(NULL);
-        mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
-        string search = "SELECT friend FROM friends WHERE user='" + friendObj.nameuser.substr(5) + "';";
-        cout << "SQL语句:" << search << endl;
-        mysql_query(con, search.c_str());
-        auto result = mysql_store_result(con);
-        int numFriends = mysql_num_rows(result);
-        if (numFriends > 0) {
-        cout << "已查询到以下好友：" << endl;
-        for (int i = 0; i < numFriends; i++) {
-            auto row = mysql_fetch_row(result);
-            string friendName = row[0];
-            cout << friendName << endl;
-            // 将好友信息发送给客户端
-            send(conn, friendName.c_str(), friendName.length(), 0);
-        }
-    } else {
-        cout << "未查询到好友" << endl;
-        // 发送未查询到好友的信息给客户端
-        string message = "No friends found";
-        send(conn, message.c_str(), message.length(), 0);
-    }
-    cout << endl;
-    mysql_free_result(result);
-    }
+              
             }
             //密码错误
             else{
@@ -254,13 +227,63 @@ void server::HandleRequest(int conn,string str)
         }
         //没找到用户名
         else{
-            printf("1111");
             std::cout<<"查询失败\n\n";
             char str1[100]="wrong";
             send(conn,str1,strlen(str1),0);
         }
         mysql_free_result(result);
     }
+    //设定目标的文件描述符
+    else if(str.find("target:")!=str.npos)
+    {
+         Friend friendobj = Friend::fromjson(str);
+         string target=friendobj.target_name.substr(7);
+         string from=friendobj.logiin_name.substr(5);
+        // int pos1=str.find("from");
+        // string target=str.substr(7,pos1-7),from=str.substr(pos1+4);
+        target_name=target;
+        //找不到这个目标
+        if(name_sock_map.find(target)==name_sock_map.end())
+        {
+
+            cout<<"源用户为"<<login_name<<",目标用户"<<target_name<<"仍未登录，无法发起私聊\n";
+        }
+        //找到了目标
+        else
+        {
+             cout<<"源用户"<<login_name<<"向目标用户"<<target_name<<"发起的私聊即将建立";
+            cout<<",目标用户的套接字描述符为"<<name_sock_map[target]<<endl;
+            target_conn=name_sock_map[target];
+        }
+
+    }
+    //接收到消息，转发
+    else if(str.find("content:")!=str.npos)
+    {
+        if(target_conn==-1)
+        {
+            cout<<"找不到目标用户"<<target_name<<"的套接字,将尝试重新寻找目标用户的套接字\n";
+        }
+        if(name_sock_map.find(target_name)!=name_sock_map.end())
+        {
+                target_conn=name_sock_map[target_name];
+                cout<<"重新查找目标用户套接字成功\n";
+        }
+        else
+        {
+                cout<<"查找仍然失败，转发失败！\n";
+        }
+        string recv_str(str);
+        string send_str=recv_str.substr(8);
+        cout<<"用户"<<login_name<<"向"<<target_name<<"发送"<<send_str;
+        send_str="["+login_name+"]:"+send_str;
+        send(target_conn,send_str.c_str(),send_str.length(),0);
+    }
+     //更新实参
+    get<0>(info)=if_login;//记录当前服务对象是否成功登录
+    get<1>(info)=login_name;//记录当前服务对象的名字
+    get<2>(info)=target_name;//记录目标对象的名字
+    get<3>(info)=target_conn;//目标对象的套接字描述符
 
 }
 
