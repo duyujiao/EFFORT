@@ -53,11 +53,18 @@ void client::SendMsg(int conn){
     char sendbuf[100];
     while (1)
     {
-        memset(sendbuf, 0, sizeof(sendbuf));
-        cin>>sendbuf;
-        int ret=send(conn, sendbuf, strlen(sendbuf),0); //发送
+        // memset(sendbuf, 0, sizeof(sendbuf));
+        // cin>>sendbuf;
+        // int ret=send(conn, sendbuf, strlen(sendbuf),0); //发送
+        string str;
+        cin>>str;
+        //发送消息
+        str="content:"+str;
+        int ret=send(conn,str.c_str(),str.length(),0);
+
         //输入exit或者对端关闭时结束
-        if(strcmp(sendbuf,"exit")==0||ret<=0)
+        //if(strcmp(sendbuf,"exit")==0||ret<=0)
+        if(str=="content:exit"||ret<=0)
             break;
     }
 }
@@ -72,7 +79,7 @@ void client::RecvMsg(int conn){
         //recv返回值小于等于0，退出
         if(len<=0)
             break;
-        cout<<"收到服务器发来的信息："<<buffer<<endl;
+        cout<<buffer<<endl;
     }
 }
 
@@ -121,7 +128,7 @@ void client::HandleClient(int conn)
             }
              name="name:"+name;
              pass="pass:"+pass;
-            // string str=name+pass;
+           // string str=name+pass;
             User user;
             user.name=name;
             user.pass=pass;
@@ -175,69 +182,51 @@ void client::HandleClient(int conn)
         system("clear");//清空终端d
         cout<<"        欢迎回来,"<<login_name.substr(5)<<endl;
         int choice;
-    string friendName;
-
-    
-    cout << " ------------------\n";
-    cout << "|                  |\n";
-    cout << "| 请选择好友管理选项： |\n";
-    cout << "|    0:返回主菜单     |\n";
-    cout << "|    1:添加好友       |\n";
-    cout << "|    2:删除好友       |\n";
-    cout << "|    3:查询好友       |\n";
-    cout << "|                  |\n";
-    cout << " ------------------ \n\n";
-
-    while(1)
-    {
+    //string friendName; 
+    // cout << " ------------------\n";
+    // cout << "|                  |\n";
+    // cout << "| 请选择好友管理选项： |\n";
+    // cout << "|    0:返回主菜单     |\n";
+    // cout << "|    1:添加好友       |\n";
+    // cout << "|    2:删除好友       |\n";
+    // cout << "|    3:查询好友       |\n";
+    // cout << "|                  |\n";
+    // cout << " ------------------ \n\n";
+        // ManageFriends(conn);
+        cout<<" -------------------------------------------\n";
+        cout<<"|                                           |\n";
+        cout<<"|          请选择你要的选项：               |\n";
+        cout<<"|              0:退出                       |\n";
+        cout<<"|              1:发起单独聊天               |\n";
+        cout<<"|              2:发起群聊                   |\n";
+        cout<<"|                                           |\n";
+        cout<<" ------------------------------------------- \n\n";
         cin>>choice;
+    }
         if(choice==0)
+        break;
+        //私聊
+        if(choice==1)
         {
-            break;
-        }
-        else if(choice==1)
-        {
-            cout<<"请输入要添加的好友名字：";
-            cin>>friendName;
+            cout<<"请输入对方的用户名：";
+            string target_name,content;
+            cin>>target_name;
+
             Friend friendobj;
-            friendobj.nameuser=login_name;
-            friendobj.nameadd="add:"+friendName;
-            string str=friendobj.tojson();
-            send(conn,str.c_str(),str.length(),0);
-            cout<<"已发送添加好友的请求\n\n";
-        }
-        else if(choice==2)
-        {
-            cout<<"请输入要删除的好友名字：";
-            cin >> friendName;
-            Friend friendobj;
-            friendobj.nameuser=login_name;
-            friendobj.nameadd = "delete:" + friendName;
-            string str = friendobj.tojson();
-            send(conn, str.c_str(), str.length(), 0);
-            cout << "已发送删除好友请求\n\n";
-        }
-        else if(choice==3)
-        {
-            Friend friendobj;
-            friendobj.nameuser=login_name;
-            friendobj.nameadd = "query";
-            string str = friendobj.tojson();
-            send(conn, str.c_str(), str.length(), 0);
-            cout << "已发送查询好友请求\n\n";
+            friendobj.target_name="target:"+target_name;
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            string sendstr=friendobj.tojson();
+           // string sendstr("target:"+target_name+"from:"+login_name);//标识目标用户+源用户
+            send(sock,sendstr.c_str(),sendstr.length(),0);//先向服务器发送目标用户和源用户
+            cout<<"请输入你想说的话(输入exit退出):\n";
+            thread t1(client::SendMsg,conn); //创建发送线程
+            thread t2(client::RecvMsg,conn);//创建接收线程
+            t1.join();
+            t2.join();
+
         }
     }
-       // ManageFriends(conn);
-        // cout<<" -------------------------------------------\n";
-        // cout<<"|                                           |\n";
-        // cout<<"|          请选择你要的选项：               |\n";
-        // cout<<"|              0:退出                       |\n";
-        // cout<<"|              1:发起单独聊天               |\n";
-        // cout<<"|              2:发起群聊                   |\n";
-        // cout<<"|                                           |\n";
-        // cout<<" ------------------------------------------- \n\n";
-    }
-    }
+    close(sock);
 }
 
 
