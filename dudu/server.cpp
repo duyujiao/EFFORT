@@ -243,9 +243,11 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
         string add=friendobj.nameadd;
         string from=friendobj.logiin_name.substr(5);
         string search = "INSERT INTO FRIENDS (NAME,FRIENDS) VALUES ('" +from+ "','" +add+ "');";
+        search="UPDATE FRIENDS SET friends = CONCAT(friends, '," +add+ "') WHERE name = '" +from+ "';";
         std::cout<<"sql语句:"<<search<<endl<<endl;
         mysql_query(con, search.c_str());
         cout << "已添加好友：" << friendobj.nameadd  << endl << endl;
+
     }
 
     //设定目标的文件描述符
