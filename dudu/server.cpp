@@ -249,7 +249,19 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
         cout << "已添加好友：" << friendobj.nameadd  << endl << endl;
 
     }
+    else if (str.find("delete:") != str.npos) 
+    {
+        Friend friendobj=Friend::fromjson(str);
+        //处理好友逻辑
+        cout<<"收到删除好友的请求，好友名字："<<friendobj.nameadd<<endl;
+        string deletee=friendobj.nameadd;
+        string from=friendobj.logiin_name.substr(5);
+        string search = "UPDATE FRIENDS SET friends=TRIM(TRAILING '," +deletee+ "' FROM SUBSTRING_INDEX (CONCAT(friends,','),'," +deletee+ "',1))WHERE name='" +from+ "';";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+        cout << "已删除好友：" << friendobj.nameadd << endl << endl;
 
+    }
     //设定目标的文件描述符
     else if(str.find("target:")!=str.npos)
     {
