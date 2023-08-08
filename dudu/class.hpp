@@ -1,6 +1,7 @@
 #include<iostream>
 #include<string>
 #include<jsoncpp/json/json.h>
+#include<set>
 
 using namespace std;
 using namespace Json;
@@ -60,15 +61,17 @@ class User
 class Friend
 {
     public:
-    string nameuser;
+    string target_name;
+    string logiin_name;
     string nameadd;
     
     string tojson() const
     {
         Value f;
-        f["nameuser"]=nameuser;
+        f["target_name"]=target_name;
+        f["logiin_name"]=logiin_name;
         f["nameadd"]=nameadd;
-        
+
         StreamWriterBuilder writerBuilder;
         string jsonStr=writeString(writerBuilder,f);
         return jsonStr;
@@ -83,17 +86,19 @@ class Friend
         //>>运算符将输入流中的数据解析并存储到root对象中，从而实现了字符串到 JSON 对象的反序列化
         istringstream(jsonStr)>>root;
 
-        f.nameuser=root["nameuser"].asString();
+        f.target_name=root["target_name"].asString();
+        f.logiin_name=root["logiin_name"].asString();
         f.nameadd=root["nameadd"].asString();
+        
 
         //去除前缀
         if(f.nameadd.find("add:")==0)
         {
-            f.nameadd=f.nameadd.substr(5);
+            f.nameadd=f.nameadd.substr(4);
         }
         if(f.nameadd.find("delete:")==0)
         {
-            f.nameadd=f.nameadd.substr(5);
+            f.nameadd=f.nameadd.substr(7);
         }
         if(f.nameadd.find("query")==0)
         {
