@@ -92,6 +92,7 @@ cout<<" -------------------------------------------\n";
         cout<<"|              2:发起群聊                   |\n";
         cout<<"|              3:添加好友                   |\n";
         cout<<"|              4:删除好友                   |\n";
+        cout<<"|              5:查询好友                    |\n";
         cout<<"|                                           |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -227,6 +228,15 @@ void client::HandleClient(int conn)
             cout << "已发送删除好友请求\n\n";
             cout<<"删除成功"<<endl;
             client::Menu();
+        }
+        else if(choice==5)
+        {
+            Friend friendobj;
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            friendobj.nameadd = "query";
+            string str = friendobj.tojson();
+            send(conn, str.c_str(), str.length(), 0);
+            cout << "已发送查询好友请求\n\n";
         }
         //私聊
         else if(choice==1)
