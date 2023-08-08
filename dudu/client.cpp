@@ -181,7 +181,7 @@ void client::HandleClient(int conn)
     if(if_login){
         system("clear");//清空终端d
         cout<<"        欢迎回来,"<<login_name.substr(5)<<endl;
-        int choice;
+      
     //string friendName; 
     // cout << " ------------------\n";
     // cout << "|                  |\n";
@@ -199,14 +199,29 @@ void client::HandleClient(int conn)
         cout<<"|              0:退出                       |\n";
         cout<<"|              1:发起单独聊天               |\n";
         cout<<"|              2:发起群聊                   |\n";
+        cout<<"|              3:添加好友                   |\n";
         cout<<"|                                           |\n";
         cout<<" ------------------------------------------- \n\n";
         cin>>choice;
     }
         if(choice==0)
         break;
+         else if(choice==3)
+        {
+            printf("uuu");
+            string friendName;
+            cout<<"请输入要添加的好友名字：";
+            cin>>friendName;
+            Friend friendobj;
+            friendobj.nameadd="add:"+friendName;
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            string str2=friendobj.tojson();
+            send(conn,str2.c_str(),str2.length(),0);
+            cout<<"已发送添加好友的请求\n\n";
+            break;
+        }
         //私聊
-        if(choice==1)
+        else if(choice==1)
         {
             cout<<"请输入对方的用户名：";
             string target_name,content;
@@ -223,8 +238,10 @@ void client::HandleClient(int conn)
             thread t2(client::RecvMsg,conn);//创建接收线程
             t1.join();
             t2.join();
+            break;
 
         }
+      
     }
     close(sock);
 }
