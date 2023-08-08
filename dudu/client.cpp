@@ -82,8 +82,18 @@ void client::RecvMsg(int conn){
         cout<<buffer<<endl;
     }
 }
-
-
+void client::Menu()
+{
+cout<<" -------------------------------------------\n";
+        cout<<"|                                           |\n";
+        cout<<"|          请选择你要的选项：               |\n";
+        cout<<"|              0:退出                       |\n";
+        cout<<"|              1:发起单独聊天               |\n";
+        cout<<"|              2:发起群聊                   |\n";
+        cout<<"|              3:添加好友                   |\n";
+        cout<<"|                                           |\n";
+        cout<<" ------------------------------------------- \n\n";
+}
 void client::HandleClient(int conn)
 {
     int choice;
@@ -193,15 +203,7 @@ void client::HandleClient(int conn)
     // cout << "|                  |\n";
     // cout << " ------------------ \n\n";
         // ManageFriends(conn);
-        cout<<" -------------------------------------------\n";
-        cout<<"|                                           |\n";
-        cout<<"|          请选择你要的选项：               |\n";
-        cout<<"|              0:退出                       |\n";
-        cout<<"|              1:发起单独聊天               |\n";
-        cout<<"|              2:发起群聊                   |\n";
-        cout<<"|              3:添加好友                   |\n";
-        cout<<"|                                           |\n";
-        cout<<" ------------------------------------------- \n\n";
+        client::Menu();
         cin>>choice;
     }
         if(choice==0)
@@ -218,7 +220,9 @@ void client::HandleClient(int conn)
             string str2=friendobj.tojson();
             send(conn,str2.c_str(),str2.length(),0);
             cout<<"已发送添加好友的请求\n\n";
-            break;
+            cout<<"添加成功"<<endl;
+            client::Menu();
+
         }
         //私聊
         else if(choice==1)
