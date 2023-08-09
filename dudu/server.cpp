@@ -145,6 +145,7 @@ void server::RecvMsg(int conn)
 
 }
 
+
 void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &info)
 {
     char buffer[1000];
@@ -158,6 +159,7 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
     //连接MYSQL数据库
     MYSQL *con=mysql_init(NULL);
     mysql_real_connect(con,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
+
 
     // MySQL sql;
     // sql.connect("localhost","root","40111004","chatroom");
@@ -208,6 +210,8 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
             //密码正确
             if(info[1]==user.pass){
                 std::cout<<"登录密码正确\n\n";
+                string sear="UPDATE USER SET online_status = 'online' WHERE name = '" +user.name+"'";
+                mysql_query(con, sear.c_str()) ;
                 string str1="ok";
                 if_login=true;
                 login_name=user.name;//记录下当前登录的用户名
@@ -232,6 +236,23 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
             send(conn,str1,strlen(str1),0);
         }
         mysql_free_result(result);
+    }
+    else if (str == "logout") 
+    {
+        if (if_login) {
+            // 更新当前用户的在线状态为离线
+            string updateQuery = "UPDATE USER SET online_status = 'offline' WHERE name = '" + login_name + "'";
+            mysql_query(con, updateQuery.c_str());
+
+            if_login = false;
+            login_name = "";
+            cout << "注销成功\n\n";
+            char response[100] = "logout_success";
+            send(conn, response, strlen(response), 0);
+        } else {
+            char response[100] = "not_logged_in";
+            send(conn, response, strlen(response), 0);
+        }
     }
 
 
