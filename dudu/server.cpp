@@ -263,21 +263,64 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
         cout << "收到添加好友请求，好友名字：" << friendobj.nameadd << endl;
         string add=friendobj.nameadd;
         string from=friendobj.logiin_name.substr(5);
-        
+
         string search_from = "INSERT INTO FRIENDS (NAME,FRIENDS) VALUES ('" +from+ "','" +add+ "');";
-        search_from="UPDATE FRIENDS SET friends = CONCAT(friends, '," +add+ "') WHERE name = '" +from+ "';";
+        mysql_query(con, search_from.c_str()); // 执行from添加add的SQL语句
         
         string search_add = "INSERT INTO FRIENDS (NAME,FRIENDS) VALUES ('" +add+ "','" +from+ "');";
-        search_add="UPDATE FRIENDS SET friends = CONCAT(friends, '," +from+ "') WHERE name = '" +add+ "';";
-        
-        std::cout << "sql语句(from添加add):" << search_from << endl;
-        std::cout << "sql语句(add添加from):" << search_add << endl;
-
-        mysql_query(con, search_from.c_str()); // 执行from添加add的SQL语句
         mysql_query(con, search_add.c_str());  // 执行add添加from的SQL语句
 
-        cout << "已添加好友：" << friendobj.nameadd  << endl << endl;
+        string check_friendship_query = "SELECT * FROM FRIENDS WHERE name='" +from+ "' AND FIND_IN_SET('" +add+ "', friends);";
+        string checkk_friendship_query = "SELECT * FROM FRIENDS WHERE name='" +add+ "' AND FIND_IN_SET('" +from+ "', friends);";
 
+        // 执行查询语句
+        int result = mysql_query(con, check_friendship_query.c_str());
+        if (result != 0)
+        {
+        cout << "查询错误: " << mysql_error(con) << endl;
+        // 处理查询错误的情况
+        } 
+        else 
+        {
+            MYSQL_RES* query_result = mysql_store_result(con);
+            int num_rows = mysql_num_rows(query_result);
+            if (num_rows > 0)
+            {
+                cout << "好友关系已存在，无需重复添加" << endl;
+                // 处理好友关系已存在的情况
+            }
+             else 
+            {
+                search_from="UPDATE FRIENDS SET friends = CONCAT(friends, '," +add+ "') WHERE name = '" +from+ "';";
+                mysql_query(con, search_from.c_str()); // 执行from添加add的SQL语句
+                std::cout << "sql语句(from添加add):" << search_from << endl;
+            }
+           mysql_free_result(query_result); // 释放查询结果集  
+        }
+        int resullt = mysql_query(con, checkk_friendship_query.c_str());
+        if (result != 0) 
+        {
+            cout << "查询错误: " << mysql_error(con) << endl;
+            // 处理查询错误的情况
+        } 
+        else
+        {
+            MYSQL_RES* query_result = mysql_store_result(con);
+            int num_rows = mysql_num_rows(query_result);
+            if (num_rows > 0)
+            {
+            cout << "好友关系已存在，无需重复添加" << endl;
+            // 处理好友关系已存在的情况
+            } 
+        else 
+        {
+        search_add="UPDATE FRIENDS SET friends = CONCAT(friends, '," +from+ "') WHERE name = '" +add+ "';";
+        std::cout << "sql语句(add添加from):" << search_add << endl;
+        mysql_query(con, search_add.c_str());  // 执行add添加from的SQL语句
+        }
+           mysql_free_result(query_result); // 释放查询结果集 
+        }
+        cout << "已添加好友：" << friendobj.nameadd  << endl << endl;
     }
     else if (str.find("delete:") != str.npos) 
     {
@@ -363,27 +406,27 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
                 string to_user=target_name;
                 string check_friendship_query="SELECT * FROM FRIENDS WHERE name='" +from_user+ "'AND FIND_IN_SET('" +to_user+ "',friends);";
                 int result=mysql_query(con,check_friendship_query.c_str());
-                if (result != 0) {
+                if (result != 0) 
+                {
                 cout << "查询错误: " << mysql_error(con) << endl;
                  // 处理查询错误
-                } else {
+                } else
+                {
                 MYSQL_RES* query_result = mysql_store_result(con);
                 int num_rows = mysql_num_rows(query_result);
                 if (num_rows == 0) {
                 cout << "用户 " << from_user << " 和 " << to_user << " 不是好友，禁止私聊" << endl;
                 // 处理非好友关系的情况，禁止私聊逻辑
                 } else {
-        string recv_str(str);
-        string send_str = recv_str.substr(8);
-        cout << "用户 " << login_name << " 向 " << target_name << " 发送 " << send_str << endl;
-        send_str = "[" + login_name + "]: " + send_str;
-        send(target_conn, send_str.c_str(), send_str.length(), 0);
-        // 处理好友关系的情况，执行私聊逻辑
-    }
-    mysql_free_result(query_result); // 释放结果集
-}
-
-
+                string recv_str(str);
+                string send_str = recv_str.substr(8);
+                cout << "用户 " << login_name << " 向 " << target_name << " 发送 " << send_str << endl;
+                send_str = "[" + login_name + "]: " + send_str;
+                send(target_conn, send_str.c_str(), send_str.length(), 0);
+                 // 处理好友关系的情况，执行私聊逻辑
+                }
+                mysql_free_result(query_result); // 释放结果集
+                }
         }
         else
         {
