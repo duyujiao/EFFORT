@@ -335,37 +335,39 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
         cout << "已删除好友：" << friendobj.nameadd << endl << endl;
 
     }
-    // else if(str=="querry"!=str.npos)
-    // {
+    else if(str.find("querry")!=str.npos)
+    {
       
-        
-    //     Friend friendobj = Friend::fromjson(str);
-    //     // 处理查询好友逻辑
-    //     cout << "收到查询好友请求" << endl;
-    //     string from=friendobj.logiin_name.substr(5);
-    //     string search="SELECT friends FROM FRIENDS WHERE name='" +from+ "';";
-    //     cout << "SQL语句:" << search << endl;
-    //     mysql_query(con, search.c_str());
-    //     auto result = mysql_store_result(con);
-    //     int numFriends = mysql_num_rows(result);
-    //     if (numFriends > 0) {
-    //     cout << "已查询到以下好友：" << endl;
-    //     for (int i = 0; i < numFriends; i++) {
-    //         auto row = mysql_fetch_row(result);
-    //         string friendName = row[0];
-    //         cout << friendName << endl;
-    //         // 将好友信息发送给客户端
-    //         send(conn, friendName.c_str(), friendName.length(), 0);
-    //     }
-    //     }
-    //     else{
-    //          cout << "未查询到好友" << endl;
-    //          // 发送未查询到好友的信息给客户端
-    //         string message = "No friends found";
-    //         send(conn, message.c_str(), message.length(), 0);
-    //     }
+        cout<<str<<endl;
+        Friend friendobj = Friend::fromjson(str);
+        // 处理查询好友逻辑
+        cout << "收到查询好友请求" << endl;
+        string from=friendobj.logiin_name.substr(5);
+        string search="SELECT friends FROM FRIENDS WHERE name='" +from+ "';";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+        auto result = mysql_store_result(con);
+        int numFriends = mysql_num_rows(result);
+        if (numFriends > 0) {
+        cout << "已查询到以下好友：" << endl;
+        string friendList;
+        for (int i = 0; i < numFriends; i++) {
+            auto row = mysql_fetch_row(result);
+            string friendName = row[0];
+            cout << friendName << endl;
+            friendList+=friendName+",";
+        }
+         // 将好友信息发送给客户端
+         send(conn, friendList.c_str(), friendList.length(), 0);
+        }
+        else{
+             cout << "未查询到好友" << endl;
+             // 发送未查询到好友的信息给客户端
+            string message = "No friends found";
+            send(conn, message.c_str(), message.length(), 0);
+        }
 
-    // }
+    }
 
     //设定目标的文件描述符
     else if(str.find("target:")!=str.npos)
