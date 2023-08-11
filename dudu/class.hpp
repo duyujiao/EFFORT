@@ -100,9 +100,9 @@ class Friend
         {
             f.nameadd=f.nameadd.substr(7);
         }
-        if(f.nameadd.find("query")==0)
+        if(f.nameadd.find("querry")==0)
         {
-            f.nameadd=f.nameadd.substr(5);
+            f.nameadd=f.nameadd.substr(6);
         }
 
         return f;

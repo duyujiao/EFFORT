@@ -42,10 +42,8 @@ class server
     static void RecvMsg(int conn);
     static void HandleRequest(int conn,string str,tuple<bool,string,string,int> &info);
     //static void HandleRequest(int conn,string str);
-    static void ManageFriends(int conn,const string& str);
-    static void AddFriend(const string& friendName); 
-    static void DeleteFriend(const string& friendName);
-    static void QueryFriends(int conn);
+   static void signalHandler(int signum) ;
+
 
 };
 

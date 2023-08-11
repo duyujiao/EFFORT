@@ -16,7 +16,10 @@
 #include <vector>
 #include <mysql/mysql.h>  
 #include <unordered_map>   
-#include <pthread.h>    
+#include <pthread.h> 
+#include <signal.h>   
+#include <cstdlib>
+#include <csignal>  // 包含信号处理相关的头文件
 using namespace std;
 
 #endif

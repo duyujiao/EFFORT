@@ -13,6 +13,8 @@ using namespace std;
 #include"client.h"
 #include"class.hpp"
 
+
+
 client::client(int port,string ip):server_port(port),server_ip(ip){}
 client::~client()
 {
@@ -38,7 +40,6 @@ void client::run(){
         exit(1);
     }
     cout<<"连接服务器成功\n";
-
     HandleClient(sock);
 
     //创建发送线程和接收线程
@@ -82,6 +83,8 @@ void client::RecvMsg(int conn){
         cout<<buffer<<endl;
     }
 }
+
+
 void client::Menu()
 {
 cout<<" -------------------------------------------\n";
@@ -93,11 +96,16 @@ cout<<" -------------------------------------------\n";
         cout<<"|              3:添加好友                   |\n";
         cout<<"|              4:删除好友                   |\n";
         cout<<"|              5:查询好友                    |\n";
-        cout<<"|                                           |\n";
+        cout<<"|                 6:注销                          |\n";
         cout<<" ------------------------------------------- \n\n";
 }
+
+
+
+
 void client::HandleClient(int conn)
 {
+
     int choice;
     string name,pass,pass1;
     bool if_login=false;//记录是否登录成功
@@ -112,9 +120,11 @@ void client::HandleClient(int conn)
     cout<<"|                  |\n";
     cout<<" ------------------ \n\n";
 
+
     //开始处理事物
     while(1)
     {
+         
         if(if_login)
         break;
         cin>>choice;
@@ -186,10 +196,16 @@ void client::HandleClient(int conn)
                 cout<<"密码或用户名错误!\n\n";
             }
         }
+       
     }
+       
+
     //登录成功
     while(if_login&&1)
     {
+
+      
+
     if(if_login){
         system("clear");//清空终端d
         cout<<"        欢迎回来,"<<login_name.substr(5)<<endl;
@@ -229,14 +245,35 @@ void client::HandleClient(int conn)
             cout<<"删除成功"<<endl;
             client::Menu();
         }
-        else if(choice==5)
+        // else if(choice==5)
+        // {
+        //     Friend friendobj;
+        //     friendobj.logiin_name="from:"+login_name.substr(5);
+        //     friendobj.nameadd = "querry:";
+        //     string str = friendobj.tojson();
+        //     send(conn, str.c_str(), str.length(), 0);
+        //     cout << "已发送查询好友请求\n\n";
+        // }
+         else if(choice==6)
         {
-            Friend friendobj;
-            friendobj.logiin_name="from:"+login_name.substr(5);
-            friendobj.nameadd = "query";
-            string str = friendobj.tojson();
-            send(conn, str.c_str(), str.length(), 0);
-            cout << "已发送查询好友请求\n\n";
+        // 发送注销请求
+        string logoutMsg = "logout";
+        send(sock, logoutMsg.c_str(), logoutMsg.length(), 0);
+
+        // 接收响应
+        char buffer[1000];
+        memset(buffer, 0, sizeof(buffer));
+        recv(sock, buffer, sizeof(buffer), 0);
+        string response(buffer);
+
+        // 注销成功
+        if (response == "logout_success") {
+            cout << "注销成功\n\n";
+        }
+        // 未登录
+        else if (response == "not_logged_in") {
+            cout << "您尚未登录\n\n";
+        }
         }
         //私聊
         else if(choice==1)
@@ -244,6 +281,11 @@ void client::HandleClient(int conn)
             cout<<"请输入对方的用户名：";
             string target_name,content;
             cin>>target_name;
+            // //检查好友关系
+            // string from_user = login_name.substr(5);
+            // string check_friendship_query = "SELECT * FROM FRIENDS WHERE NAME = '" + from_user + "' AND FIND_IN_SET('" + target_name + "', FRIENDS);";
+            // int result = mysql_query(con, check_friendship_query.c_str());
+
 
             Friend friendobj;
             friendobj.target_name="target:"+target_name;
@@ -261,8 +303,12 @@ void client::HandleClient(int conn)
         }
       
     }
+
+    
     close(sock);
 }
+
+
 
 
 
