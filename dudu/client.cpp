@@ -245,15 +245,23 @@ void client::HandleClient(int conn)
             cout<<"删除成功"<<endl;
             client::Menu();
         }
-        // else if(choice==5)
-        // {
-        //     Friend friendobj;
-        //     friendobj.logiin_name="from:"+login_name.substr(5);
-        //     friendobj.nameadd = "querry:";
-        //     string str = friendobj.tojson();
-        //     send(conn, str.c_str(), str.length(), 0);
-        //     cout << "已发送查询好友请求\n\n";
-        // }
+        else if(choice==5)
+        {
+            Friend friendobj;
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            friendobj.nameadd = "querry:";
+            string str = friendobj.tojson();
+            send(conn, str.c_str(), str.length(), 0);
+            cout << "已发送查询好友请求\n\n";
+            // 接收并打印查询结果
+            char buffer[1000];
+            memset(buffer,0,sizeof(buffer));
+            recv(sock,buffer,sizeof(buffer),0);//接受响应
+            //将接收到的数据缓冲区buffer转换为string类型的对象response
+            string reponse(buffer);
+            cout << "查询结果："<<reponse << endl;
+            sleep(10);
+        }
          else if(choice==6)
         {
         // 发送注销请求
