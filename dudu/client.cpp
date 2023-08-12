@@ -98,6 +98,8 @@ cout<<" -------------------------------------------\n";
         cout<<"|              5:查询好友                    |\n";
         cout<<"|              6:注销                        |\n";
         cout<<"|              7:屏蔽好友                     |\n";
+        cout<<"|              8:解除屏蔽                     |\n";        
+        cout<<"|              9:发起群聊                     |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -293,11 +295,34 @@ void client::HandleClient(int conn)
             //发送屏蔽好友请求到服务器
             Friend friendobj;
             friendobj.nameblock="block:"+blockedFriendName;
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            string request=friendobj.tojson();
+            send(conn,request.c_str(),request.length(),0);
+            cout<<"已发送屏蔽好友的请求\n\n";
+            client::Menu();
+
+        }
+        //解除屏蔽
+        else if(choice==8)
+        {
+            string blockedFriendName;
+            cout<<"请输入要解除屏蔽的好友的名字：";
+            cin>>blockedFriendName;
+            //发送屏蔽好友请求到服务器
+            Friend friendobj;
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            friendobj.nameblock="unlock:"+blockedFriendName;
             string request=friendobj.tojson();
             send(conn,request.c_str(),request.length(),0);
             cout<<"已发送屏蔽好友的请求\n\n";
             break;
-            //client::Menu();
+        }
+        //群聊
+        else if(choice==9)
+        {
+            cout<<"请输入群号：";
+            int num;
+            cin>>num;
 
         }
         //私聊
