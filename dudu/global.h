@@ -15,11 +15,13 @@
 #include <thread>
 #include <vector>
 #include <mysql/mysql.h>  
-#include <unordered_map>   
+#include <unordered_map> 
+#include <unordered_set>  
 #include <pthread.h> 
 #include <signal.h>   
 #include <cstdlib>
 #include <csignal>  // 包含信号处理相关的头文件
+#include <set>//将处于同一群聊的套接字描述符放入同一个 set 中
 using namespace std;
 
 #endif

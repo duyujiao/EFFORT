@@ -64,6 +64,7 @@ class Friend
     string target_name;
     string logiin_name;
     string nameadd;
+    string nameblock;
     
     string tojson() const
     {
@@ -71,6 +72,7 @@ class Friend
         f["target_name"]=target_name;
         f["logiin_name"]=logiin_name;
         f["nameadd"]=nameadd;
+        f["nameblock"]=nameblock;
 
         StreamWriterBuilder writerBuilder;
         string jsonStr=writeString(writerBuilder,f);
@@ -89,7 +91,7 @@ class Friend
         f.target_name=root["target_name"].asString();
         f.logiin_name=root["logiin_name"].asString();
         f.nameadd=root["nameadd"].asString();
-        
+        f.nameblock=root["nameblock"].asString();
 
         //去除前缀
         if(f.nameadd.find("add:")==0)
@@ -104,8 +106,22 @@ class Friend
         {
             f.nameadd=f.nameadd.substr(6);
         }
+        if(f.nameblock.find("block:")==0)
+        {
+            f.nameblock=f.nameblock.substr(6);
+        }
+        if(f.nameblock.find("unlock:")==0)
+        {
+            f.nameblock=f.nameblock.substr(7);
+        }
 
         return f;
     }
 
+};
+
+class Group
+{
+    public:
+    int num;
 };

@@ -26,6 +26,7 @@ void client::run(){
     //定义sockfd
     sock = socket(AF_INET,SOCK_STREAM, 0);
 
+
     //定义sockaddr_in
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
@@ -59,9 +60,17 @@ void client::SendMsg(int conn){
         // int ret=send(conn, sendbuf, strlen(sendbuf),0); //发送
         string str;
         cin>>str;
-        //发送消息
+        //私聊消息
+        if(conn>0)
+        {
         str="content:"+str;
-        int ret=send(conn,str.c_str(),str.length(),0);
+        }
+        //群聊消息
+        if(conn<0)
+        {
+            str="gr_message:"+str;
+        }
+        int ret=send(abs(conn),str.c_str(),str.length(),0);
 
         //输入exit或者对端关闭时结束
         //if(strcmp(sendbuf,"exit")==0||ret<=0)
@@ -193,7 +202,8 @@ void client::HandleClient(int conn)
                     if_login=true;
                     login_name=user.name;
                     cout<<"登陆成功\n\n";
-                    break;
+
+              break;
                 }
                 //登陆失败
                 else
@@ -208,7 +218,6 @@ void client::HandleClient(int conn)
     while(if_login&&1)
     {
 
-      
 
     if(if_login){
         system("clear");//清空终端d
@@ -323,6 +332,14 @@ void client::HandleClient(int conn)
             cout<<"请输入群号：";
             int num;
             cin>>num;
+            string sendstr("group:"+to_string(num));
+            send(sock,sendstr.c_str(),sendstr.length(),0);
+            cout<<"请输入你想说的话(输入exit退出):\n";
+            thread t1(client::SendMsg,-conn);//创建发送线程，传入负数，和私聊区分开
+            thread t2(client::RecvMsg,conn);//创建接收线程
+            t1.join();
+            t2.join();
+
 
         }
         //私聊
