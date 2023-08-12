@@ -217,11 +217,46 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
                 if_login=true;
                 login_name=user.name;//记录下当前登录的用户名
 
+
+                // 查询数据库中的待接收消息
+string retrieve_messages_query = "SELECT * FROM messages WHERE receiver = '" + login_name + "';";
+int result = mysql_query(con, retrieve_messages_query.c_str());
+if (result != 0) {
+  cout << "检索消息失败: " << mysql_error(con) << endl;
+  // 处理检索失败的情况
+} else {
+  MYSQL_RES* query_result = mysql_store_result(con);
+  int num_rows = mysql_num_rows(query_result);
+  if (num_rows > 0) {
+    cout << "您有 " << num_rows << " 条待接收的消息：" << endl;
+    // 遍历查询结果并输出消息内容
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(query_result))) {
+      string sender = row[1];
+      string message = row[3];
+     string output_message = "[" + sender + "]: " + message + "\n";
+
+  // 发送消息给客户端
+  send(conn, output_message.c_str(), output_message.length(), 0);
+    }
+  } else {
+    cout << "没有待接收的消息。" << endl;
+  }
+  mysql_free_result(query_result);
+}
+
+// 清空数据库中的待接收消息
+string clear_messages_query = "DELETE FROM messages WHERE receiver = '" + login_name + "';";
+result = mysql_query(con, clear_messages_query.c_str());
+if (result != 0) {
+  cout << "清空消息失败: " << mysql_error(con) << endl;
+}
+
                 pthread_mutex_lock(&name_sock_mutx);//上锁
                 name_sock_map[login_name]=conn;//记录下名字和文件描述符的对应关系
                 pthread_mutex_unlock(&name_sock_mutx);//解锁
                 send(conn,str1.c_str(),str1.length()+1,0);
-              
+                         
             }
             //密码错误
             else{
@@ -434,6 +469,7 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
         {
 
             cout<<"源用户为"<<login_name<<",目标用户"<<target_name<<"仍未登录，无法发起私聊\n";
+       
         }
         //找到了目标
         else
@@ -441,6 +477,9 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
              cout<<"源用户"<<login_name<<"向目标用户"<<target_name<<"发起的私聊即将建立";
             cout<<",目标用户的套接字描述符为"<<name_sock_map[target]<<endl;
             target_conn=name_sock_map[target];
+
+        
+
         }
 
     }
@@ -450,11 +489,20 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
         if(target_conn==-1)
         {
             cout<<"找不到目标用户"<<target_name<<"的套接字,将尝试重新寻找目标用户的套接字\n";
+              // 存储消息到数据库
+string store_message_query = "INSERT INTO messages (sender, receiver, message) VALUES ('" + login_name + "', '" + target_name + "', '" + str.substr(7) + "');";
+int result = mysql_query(con, store_message_query.c_str());
+if (result != 0) {
+  cout << "存储消息失败: " << mysql_error(con) << endl;
+  // 处理存储失败的情况
+}
+          
         }
         if(name_sock_map.find(target_name)!=name_sock_map.end())
         {
                 target_conn=name_sock_map[target_name];
                 cout<<"重新查找目标用户套接字成功\n";
+
                 string from_user=login_name;
                 string to_user=target_name;
                 //检查好友关系
@@ -485,10 +533,12 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
                 int num_rows = mysql_num_rows(query_result);
                 if (num_rows == 0)
                 {
+          
                 string recv_str(str);
                 string send_str = recv_str.substr(8);
                 cout << "用户 " << login_name << " 向 " << target_name << " 发送 " << send_str << endl;
                 send_str = "[" + login_name + "]: " + send_str;
+              
                 send(target_conn, send_str.c_str(), send_str.length(), 0);
                  // 处理好友关系的情况，执行私聊逻辑
                     
