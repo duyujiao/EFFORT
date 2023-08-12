@@ -17,6 +17,10 @@
 unordered_map<string,int> server::name_sock_map;//名字和套接字描述符
 pthread_mutex_t server::name_sock_mutx;//互斥锁，锁住需要修改name_sock_map的临界区
 vector<bool> server::sock_arr(10000,false);//将10000个位置都设为false，sock_arr[i]=false表示套接字描述符i未打开（因此不能关闭）
+//在服务端维护的屏蔽消息的列表
+unordered_map<string,unordered_set<string>> blockedMessages;
+////存储被屏蔽的好友列表
+std::unordered_set<std::string>blockedFriends;
 //构造函数
 server::server(int port,string ip):server_port(port),server_ip(ip){}
 
@@ -337,8 +341,6 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
     }
     else if(str.find("querry")!=str.npos)
     {
-      
-        cout<<str<<endl;
         Friend friendobj = Friend::fromjson(str);
         // 处理查询好友逻辑
         cout << "收到查询好友请求" << endl;
@@ -367,6 +369,15 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
             send(conn, message.c_str(), message.length(), 0);
         }
 
+    }
+    //屏蔽
+    else if(str.find("block:")!=str.npos)
+    {
+         Friend friendobj = Friend::fromjson(str);
+         cout<<"收到屏蔽好友的请求"<<endl;
+         string blockedFriendName=friendobj.nameblock;
+         blockedFriends.insert(blockedFriendName);
+         cout<<"已屏蔽好友："<<blockedFriendName<<endl;
     }
 
     //设定目标的文件描述符
@@ -406,6 +417,7 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
                 cout<<"重新查找目标用户套接字成功\n";
                 string from_user=login_name;
                 string to_user=target_name;
+                //检查好友关系
                 string check_friendship_query="SELECT * FROM FRIENDS WHERE name='" +from_user+ "'AND FIND_IN_SET('" +to_user+ "',friends);";
                 int result=mysql_query(con,check_friendship_query.c_str());
                 if (result != 0) 
@@ -420,12 +432,25 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
                 cout << "用户 " << from_user << " 和 " << to_user << " 不是好友，禁止私聊" << endl;
                 // 处理非好友关系的情况，禁止私聊逻辑
                 } else {
+                    //检查是否屏蔽了好友发送的消息
+                    // if(blockedMessages.find(to_user)!=blockedMessages.end()&&blockedMessages[to_user].count(from_user)>0)
+                    // {
+                    //     cout << "用户 " << to_user << " 屏蔽了用户 " << from_user << " 的消息，不转发" << endl;
+                    // }
+                    if (blockedFriends.find(to_user) != blockedFriends.end())
+                {
+                     cout << "用户 " << to_user << " 屏蔽了用户 " << from_user << " 的消息，不转发" << endl;
+                    return;
+                }
+                    else
+                    {
                 string recv_str(str);
                 string send_str = recv_str.substr(8);
                 cout << "用户 " << login_name << " 向 " << target_name << " 发送 " << send_str << endl;
                 send_str = "[" + login_name + "]: " + send_str;
                 send(target_conn, send_str.c_str(), send_str.length(), 0);
                  // 处理好友关系的情况，执行私聊逻辑
+                    }
                 }
                 mysql_free_result(query_result); // 释放结果集
                 }
