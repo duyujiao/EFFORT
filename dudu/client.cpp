@@ -96,7 +96,9 @@ cout<<" -------------------------------------------\n";
         cout<<"|              3:添加好友                   |\n";
         cout<<"|              4:删除好友                   |\n";
         cout<<"|              5:查询好友                    |\n";
-        cout<<"|                 6:注销                          |\n";
+        cout<<"|              6:注销                        |\n";
+        cout<<"|              7:屏蔽好友                     |\n";
+        cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
 
@@ -282,6 +284,21 @@ void client::HandleClient(int conn)
         else if (response == "not_logged_in") {
             cout << "您尚未登录\n\n";
         }
+        }
+        else if(choice==7)
+        {
+            string blockedFriendName;
+            cout<<"请输入要屏蔽的好友的名字：";
+            cin>>blockedFriendName;
+            //发送屏蔽好友请求到服务器
+            Friend friendobj;
+            friendobj.nameblock="block:"+blockedFriendName;
+            string request=friendobj.tojson();
+            send(conn,request.c_str(),request.length(),0);
+            cout<<"已发送屏蔽好友的请求\n\n";
+            break;
+            //client::Menu();
+
         }
         //私聊
         else if(choice==1)
