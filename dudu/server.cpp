@@ -17,10 +17,7 @@
 unordered_map<string,int> server::name_sock_map;//名字和套接字描述符
 pthread_mutex_t server::name_sock_mutx;//互斥锁，锁住需要修改name_sock_map的临界区
 vector<bool> server::sock_arr(10000,false);//将10000个位置都设为false，sock_arr[i]=false表示套接字描述符i未打开（因此不能关闭）
-//在服务端维护的屏蔽消息的列表
-unordered_map<string,unordered_set<string>> blockedMessages;
-////存储被屏蔽的好友列表
-std::unordered_set<std::string>blockedFriends;
+
 //构造函数
 server::server(int port,string ip):server_port(port),server_ip(ip){}
 
@@ -302,7 +299,7 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
            mysql_free_result(query_result); // 释放查询结果集  
         }
         int resullt = mysql_query(con, checkk_friendship_query.c_str());
-        if (result != 0) 
+        if (resullt != 0) 
         {
             cout << "查询错误: " << mysql_error(con) << endl;
             // 处理查询错误的情况
@@ -376,8 +373,51 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
          Friend friendobj = Friend::fromjson(str);
          cout<<"收到屏蔽好友的请求"<<endl;
          string blockedFriendName=friendobj.nameblock;
-         blockedFriends.insert(blockedFriendName);
+         string from=friendobj.logiin_name.substr(5);
+         string search = "INSERT INTO BLOCK (NAME,BLOCKFRIENDS) VALUES ('" +from+ "','" +blockedFriendName+ "');";
+         mysql_query(con, search.c_str()); 
+        string check_friendship_query = "SELECT * FROM BLOCK WHERE name='" +from+ "' AND FIND_IN_SET('" +blockedFriendName+ "',blockfriends);";
+        
+        // 执行查询语句
+        int result = mysql_query(con, check_friendship_query.c_str());
+        if (result != 0)
+        {
+        cout << "查询错误: " << mysql_error(con) << endl;
+        // 处理查询错误的情况
+        } 
+        else 
+        {
+            MYSQL_RES* query_result = mysql_store_result(con);
+            int num_rows = mysql_num_rows(query_result);
+            if (num_rows > 0)
+            {
+                cout << "已屏蔽该好友，无需重复屏蔽" << endl;
+            }
+             else 
+            {
+                search="UPDATE BLOCK SET blockfriends = CONCAT(blockfriends, '," +blockedFriendName+ "') WHERE name = '" +from+ "';";
+                mysql_query(con, search.c_str()); 
+                std::cout << "sql语句:" << search << endl;
+            }
+           mysql_free_result(query_result); // 释放查询结果集  
+        
+        }
          cout<<"已屏蔽好友："<<blockedFriendName<<endl;
+    }
+    //解除屏蔽
+    else if(str.find("unlock:")!=str.npos)
+    {
+
+         Friend friendobj=Friend::fromjson(str);
+        //处理好友逻辑
+       cout<<"收到解除屏蔽好友的请求"<<endl;
+         string blockedFriendName=friendobj.nameblock;
+        string from=friendobj.logiin_name.substr(5);
+        string search = "UPDATE BLOCK SET blockfriends=TRIM(TRAILING '," +blockedFriendName+ "' FROM SUBSTRING_INDEX (CONCAT(blockfriends,','),'," +blockedFriendName+ "',1))WHERE name='" +from+ "';";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+       
+        cout<<"已解除屏蔽好友："<<blockedFriendName<<endl;
     }
 
     //设定目标的文件描述符
@@ -433,27 +473,34 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int> &in
                 // 处理非好友关系的情况，禁止私聊逻辑
                 } else {
                     //检查是否屏蔽了好友发送的消息
-                    // if(blockedMessages.find(to_user)!=blockedMessages.end()&&blockedMessages[to_user].count(from_user)>0)
-                    // {
-                    //     cout << "用户 " << to_user << " 屏蔽了用户 " << from_user << " 的消息，不转发" << endl;
-                    // }
-                    if (blockedFriends.find(to_user) != blockedFriends.end())
+                    string check_friendship_queryy="SELECT * FROM BLOCK WHERE name='" +to_user+ "'AND FIND_IN_SET('" +from_user+ "',blockfriends);";
+                    int result=mysql_query(con,check_friendship_queryy.c_str());
+                if (result != 0) 
                 {
-                     cout << "用户 " << to_user << " 屏蔽了用户 " << from_user << " 的消息，不转发" << endl;
-                    return;
-                }
-                    else
-                    {
+                cout << "查询错误: " << mysql_error(con) << endl;
+                 // 处理查询错误
+                } 
+                else{
+                    MYSQL_RES* query_result = mysql_store_result(con);
+                int num_rows = mysql_num_rows(query_result);
+                if (num_rows == 0)
+                {
                 string recv_str(str);
                 string send_str = recv_str.substr(8);
                 cout << "用户 " << login_name << " 向 " << target_name << " 发送 " << send_str << endl;
                 send_str = "[" + login_name + "]: " + send_str;
                 send(target_conn, send_str.c_str(), send_str.length(), 0);
                  // 处理好友关系的情况，执行私聊逻辑
+                    
+                }
+                    else
+                    {
+                        cout << "用户 " << to_user << " 屏蔽了用户 " << from_user << " 的消息，不转发" << endl;
                     }
                 }
                 mysql_free_result(query_result); // 释放结果集
                 }
+        }
         }
         else
         {
