@@ -562,7 +562,7 @@ if (result != 0) {
         }
        
     }
-
+    //创建群聊
     else if(str.find("create:")!=str.npos)
     {
         Group groupobj=Group::fromjson(str);
@@ -594,28 +594,62 @@ if (result != 0) {
                 // 发送响应到客户端
                 // send(conn, "success", 7, 0);
             }
-
+        mysql_free_result(query_result);
         }
 
     }
+    //解散群聊
     else if(str.find("dismiss")!=str.npos)
     {
         Group groupobj=Group::fromjson(str);
         string groupnum=groupobj.group_num;
         string leader=groupobj.logiin_name.substr(5);
-        string sql="DELETE FROM MYGROUP WHERE num='" +groupnum+ "'";
-        cout<<"sql语句"<<sql<<endl;
-        int result=mysql_query(con,sql.c_str());
-        if(result!=0)
+        string sqll="SELECT leader FROM MYGROUP WHERE num='" +groupnum+ "'";
+        cout<<"sql语句"<<sqll<<endl;
+        int resultt=mysql_query(con,sqll.c_str());
+        if(resultt!=0)
         {
-            cout<<"解散群聊失败"<<mysql_error(con)<<endl;
-            //send(conn,"failed",7,0);
+            cout<<"查询错误"<<mysql_error(con)<<endl;
         }
         else
         {
-            cout<<"解散群组"<<groupnum<<"成功"<<endl;
-            //send(conn,"success",8,0);
+            MYSQL_RES* query_result = mysql_store_result(con);
+            if (query_result != nullptr) 
+            {
+            MYSQL_ROW row = mysql_fetch_row(query_result);
+            if (row != nullptr) 
+            {
+                string master=row[0];
+                cout<<"群号"<<groupnum<<"的群主是"<<master<<endl;
+                if(master==leader)
+                {
+                    string sql="DELETE FROM MYGROUP WHERE num='" +groupnum+ "'";
+                    cout<<"sql语句"<<sql<<endl;
+                    int result=mysql_query(con,sql.c_str());
+                    if(result!=0)
+                    {
+                        cout<<"解散群聊失败"<<mysql_error(con)<<endl;
+                        //send(conn,"failed",7,0);
+                    }
+                    else
+                    {
+                        cout<<"解散群组"<<groupnum<<"成功"<<endl;
+                        //send(conn,"success",8,0);
+                    }
+                }
+                else
+                {
+                     cout << "你不是群主，无法解散群聊" << endl;
+                     // send(conn, "failed", 7, 0);
+                }
+            }
+            else{
+                cout<<"找不到群号为2的群组"<<endl;
+            }
+            mysql_free_result(query_result);
+            }
         }
+        
 
     }
     //绑定群聊号
