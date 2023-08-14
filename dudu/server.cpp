@@ -562,6 +562,62 @@ if (result != 0) {
         }
        
     }
+
+    else if(str.find("create:")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string groupnum=groupobj.group_num;
+        string leader=groupobj.logiin_name.substr(5);
+        //检查群组是否已经存在
+        string check="SELECT *FROM MYGROUP WHERE num='" +groupnum+ "'";
+        int result=mysql_query(con,check.c_str());
+        if(result!=0)
+        {
+            cout<<"查询错误："<<mysql_error(con)<<endl;
+        }
+        else
+        {
+            MYSQL_RES* query_result = mysql_store_result(con);
+            int num_rows = mysql_num_rows(query_result);
+            if (num_rows > 0)
+            {
+                //群组存在
+                cout << "群组已存在，无法创建" << endl;
+                //send(conn,"failed",9,0);
+            }
+            else
+            {
+                string create="INSERT INTO MYGROUP (num,member,leader) VALUES ('"+groupnum+"','"+leader+"','"+leader+"')";
+                cout<<"sql语句"<<create<<endl;
+                mysql_query(con, create.c_str());
+                cout << "创建群组成功，群账号：" << groupnum << endl;
+                // 发送响应到客户端
+                // send(conn, "success", 7, 0);
+            }
+
+        }
+
+    }
+    else if(str.find("dismiss")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string groupnum=groupobj.group_num;
+        string leader=groupobj.logiin_name.substr(5);
+        string sql="DELETE FROM MYGROUP WHERE num='" +groupnum+ "'";
+        cout<<"sql语句"<<sql<<endl;
+        int result=mysql_query(con,sql.c_str());
+        if(result!=0)
+        {
+            cout<<"解散群聊失败"<<mysql_error(con)<<endl;
+            //send(conn,"failed",7,0);
+        }
+        else
+        {
+            cout<<"解散群组"<<groupnum<<"成功"<<endl;
+            //send(conn,"success",8,0);
+        }
+
+    }
     //绑定群聊号
     else if(str.find("group:")!=str.npos)
     {
