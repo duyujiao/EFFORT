@@ -109,6 +109,8 @@ cout<<" -------------------------------------------\n";
         cout<<"|              7:屏蔽好友                     |\n";
         cout<<"|              8:解除屏蔽                     |\n";        
         cout<<"|              9:发起群聊                     |\n";
+        cout<<"|              10:群组创建                    |\n";
+         cout<<"|             11:群组解散                    |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -368,10 +370,64 @@ void client::HandleClient(int conn)
             break;
 
         }
-      
-    }
+        else if(choice==10)
+        {
+            string groupNum;
+            cout<<"请输入要创建的群组账号：";
+            cin>>groupNum;
+            //发送创建群组的请求
+            Group groupobj;
+            groupobj.group_num="create:"+groupNum;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送创建群组的请求\n\n";
+            //接收服务器的响应并处理
+            // char buffer[10000];
+            //  memset(buffer, 0, sizeof(buffer));
+            // recv(conn, buffer, sizeof(buffer), 0);
+            // string response = buffer;
 
-    
+            // if (response == "success") {
+            // cout << "创建群组成功" << endl;
+            // // 处理创建群组成功的情况
+            // } else {
+            // cout << "创建群组失败" << endl;
+            // // 处理创建群组失败的情况
+            // }
+
+            client::Menu();
+      
+        }
+        else if(choice==11)
+        {
+            string groupNum;
+            cout<<"请输入要解散的群组账号：";
+            cin>>groupNum;
+            //发送创建群组的请求
+            Group groupobj;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            groupobj.group_num="dismiss:"+groupNum;
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送解散群组的请求\n\n";
+            //接收服务器的响应并处理
+            // char buffer[10000];
+            //  memset(buffer, 0, sizeof(buffer));
+            // recv(conn, buffer, sizeof(buffer), 0);
+            // string response = buffer;
+
+            // if (response == "success") {
+            // cout << "解散群组成功" << endl;
+            // // 处理解散群组成功的情况
+            // } else {
+            // cout << "解散群组失败" << endl;
+            // // 处理解散群组失败的情况
+            // }
+            client::Menu();
+        }
+
+    }
     close(sock);
 }
 
