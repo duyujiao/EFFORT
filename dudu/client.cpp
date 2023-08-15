@@ -114,6 +114,7 @@ cout<<" -------------------------------------------\n";
         cout<<"|              11:群组解散                    |\n";
         cout<<"|              12:加入某个群组                |\n";
         cout<<"|              13:查看已加入的群组             |\n";
+        cout<<"|              14:退出某个群组                |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -471,7 +472,7 @@ void client::HandleClient(int conn)
         else if(choice==12)
         {
             string groupNum;
-            cout<<"请输入要加入的群组的账号";
+            cout<<"请输入要加入的群组的账号：";
             cin>>groupNum;
             //发送加入群组的请求
             Group groupobj;
@@ -480,6 +481,19 @@ void client::HandleClient(int conn)
             string str=groupobj.tojson();
             send(conn,str.c_str(),str.length(),0);
             cout<<"已发送加入群组的请求\n\n";
+        }
+        else if(choice==14)
+        {
+            string groupNum;
+            cout<<"请输入要退出的群组账号：";
+            cin>>groupNum;
+            //发送退出群组的请求
+            Group groupobj;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            groupobj.group_num="quit:"+groupNum;
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送退出群组的请求\n\n";
         }
         else if(choice==13)
         {
