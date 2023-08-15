@@ -834,8 +834,8 @@ if (result != 0) {
         }
         else
         {
-            MYSQL_RES* query_result=mysql_store_result(con);
-            int num_rows=mysql_num_rows(query_result);
+            MYSQL_RES* query_resultt=mysql_store_result(con);
+            int num_rows=mysql_num_rows(query_resultt);
             if(num_rows>0)
             {
                 //群组存在，检查是否需要群主同意加入
@@ -852,11 +852,12 @@ if (result != 0) {
                         string joinType = row[0]; //获取加入方式
                         if(joinType=="y")
                         {
-                            
+                            //怎么实现对群主发送加群申请，群主并且同意
                         }
                         else
                         {
-                            string sqll="SELECT member FROM MYGROUP WHERE num='" +groupnum+ "'";
+                            string sqll = "SELECT member FROM MYGROUP WHERE num = '" + groupnum + "' AND FIND_IN_SET('"+from+"', member) > 0";
+                            //string sqll="SELECT member FROM MYGROUP WHERE num='" +groupnum+ "'";
                             cout<<"sql语句"<<sqll<<endl;
                             int resultt=mysql_query(con,sqll.c_str());
                             if(resultt!=0)
@@ -871,6 +872,7 @@ if (result != 0) {
                                     MYSQL_ROW row = mysql_fetch_row(query_result);
                                     if (row != nullptr) 
                                     {
+                                        //string mem = row[0];
                                         cout<<"你已经是该群的成员"<<endl;
                                     }
                                     else
@@ -891,6 +893,8 @@ if (result != 0) {
                         // send(conn, "failed", 7, 0);
                     }
                      mysql_free_result(join_type_result);
+   
+
                 }
 
             }
@@ -901,6 +905,7 @@ if (result != 0) {
             // 发送响应到客户端
             // send(conn, "failed", 7, 0);
                     }
+             mysql_free_result(query_resultt);
 
         }
     }
@@ -930,7 +935,36 @@ if (result != 0) {
             }
         }
     }
+    //查询群组
+    else if(str.find("groupzu")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string from=groupobj.logiin_name.substr(5);
+        string search="SELECT num FROM MYGROUP WHERE FIND_IN_SET('" +from+ "',member)>0";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+        auto result = mysql_store_result(con);
+        int numGroups = mysql_num_rows(result);
 
+    if (numGroups > 0) {
+        cout << "Found the following groups:" << endl;
+        string groupList;
+        for (int i = 0; i < numGroups; i++) {
+            auto row = mysql_fetch_row(result);
+            string groupName = row[0];
+            cout << groupName << endl;
+            groupList += groupName + ",";
+        }
+
+        // Send group information to the client
+        send(conn, groupList.c_str(), groupList.length(), 0);
+    } else {
+        cout << "No groups found" << endl;
+        // Send "no groups found" message to the client
+        string message = "No groups found";
+        send(conn, message.c_str(), message.length(), 0);
+    }
+    }
 
    
 
