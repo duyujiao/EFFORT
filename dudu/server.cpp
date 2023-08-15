@@ -880,6 +880,8 @@ if (result != 0) {
                                         string search="UPDATE MYGROUP SET member = CONCAT(member, '," +from+ "') WHERE num = '" +groupnum+ "';";
                                         mysql_query(con, search.c_str());
                                         std::cout << "sql语句:" << search << endl;
+                                        cout<<"已加入该群"<<endl;
+                                       
                                     }
                                 }
                                 mysql_free_result(query_result);
@@ -907,6 +909,40 @@ if (result != 0) {
                     }
              mysql_free_result(query_resultt);
 
+        }
+    }
+    //退出某个群组
+    else if(str.find("quit")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string groupnum=groupobj.group_num;
+        string from=groupobj.logiin_name.substr(5);
+        //检查群组是否存在
+        string check="SELECT * FROM MYGROUP WHERE num='" +groupnum+ "'";
+        int result=mysql_query(con,check.c_str());
+        if(result!=0)
+        {
+            cout<<"查询错误"<<mysql_error(con)<<endl;
+        }
+        else
+        {
+            MYSQL_RES* query_resultt=mysql_store_result(con);
+            int num_rows=mysql_num_rows(query_resultt);
+            if(num_rows>0)
+            {
+                    string search="UPDATE MYGROUP SET member=TRIM(TRAILING '," +from+ "' FROM SUBSTRING_INDEX (CONCAT(member,','),'," +from+ "',1))WHERE num = '" + groupnum + "';";
+                    mysql_query(con, search.c_str());
+                    std::cout << "sql语句:" << search << endl;
+                    cout<<"已退出该群"<<endl;
+
+            }
+            else {
+            // 群组不存在
+            cout << "群组不存在" << endl;
+            // 发送响应到客户端
+            // send(conn, "failed", 7, 0);
+                    }
+            mysql_free_result(query_resultt);
         }
     }
     //绑定群聊号
