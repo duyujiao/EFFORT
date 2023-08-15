@@ -1001,6 +1001,36 @@ if (result != 0) {
         send(conn, message.c_str(), message.length(), 0);
     }
     }
+    else if(str.find("gmem:")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string from=groupobj.logiin_name.substr(5);
+        string groupnum=groupobj.group_num;
+        string search="SELECT member FROM MYGROUP WHERE num='"+groupnum+"'";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+        auto result = mysql_store_result(con);
+        int numGroups = mysql_num_rows(result);
+
+        if (numGroups > 0) {
+        cout << "Found the following groupmembers:" << endl;
+        string groupList;
+        for (int i = 0; i < numGroups; i++) {
+            auto row = mysql_fetch_row(result);
+            string groupName = row[0];
+            cout << groupName << endl;
+            groupList += groupName + ",";
+        }
+
+        // Send group information to the client
+        send(conn, groupList.c_str(), groupList.length(), 0);
+    } else {
+        cout << "No groupsmember found" << endl;
+        // Send "no groups found" message to the client
+        string message = "No groupsmember found";
+        send(conn, message.c_str(), message.length(), 0);
+    }
+    }
 
    
 
