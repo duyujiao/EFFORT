@@ -113,6 +113,7 @@ cout<<" -------------------------------------------\n";
         cout<<"|              10:群组创建                    |\n";
         cout<<"|              11:群组解散                    |\n";
         cout<<"|              12:加入某个群组                |\n";
+        cout<<"|              13:查看已加入的群组             |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -479,6 +480,22 @@ void client::HandleClient(int conn)
             string str=groupobj.tojson();
             send(conn,str.c_str(),str.length(),0);
             cout<<"已发送加入群组的请求\n\n";
+        }
+        else if(choice==13)
+        {
+            Group groupobj;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            groupobj.group_num="groupzu";
+            string query=groupobj.tojson();
+            send(conn,query.c_str(),query.length(),0);
+            cout<<"已发送群组查询请求\n\n";
+             // 接收并打印查询结果
+            char buffer[1000];
+            memset(buffer, 0, sizeof(buffer));
+            recv(sock, buffer, sizeof(buffer), 0);
+            string response(buffer);
+            cout << "查询结果：" << response << endl;
+            sleep(10);
         }
 
     }
