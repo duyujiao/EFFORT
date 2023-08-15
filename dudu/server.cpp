@@ -13,15 +13,21 @@
 #include"server.h"
 #include"mysql.hpp"
 #include"class.hpp"
+#include"readnwriten.hpp"
 
+vector<bool> server::sock_arr(10000,false);
 unordered_map<string,int> server::name_sock_map;//名字和套接字描述符
-pthread_mutex_t server::name_sock_mutx;//互斥锁，锁住需要修改name_sock_map的临界区
-vector<bool> server::sock_arr(10000,false);//将10000个位置都设为false，sock_arr[i]=false表示套接字描述符i未打开（因此不能关闭）
-
+unordered_map<string,string> server::from_to_map;//记录用户xx要向用户yy发送信息
 unordered_map<int,set<int> > server::group_map;//记录群号和套接字描述符集合
+pthread_mutex_t server::name_sock_mutx;//互斥锁，锁住需要修改name_sock_map的临界区
 pthread_mutex_t server::group_mutx;//互斥锁，锁住需要修改group_map的临界区
+pthread_mutex_t server::from_mutex;//自旋锁，锁住修改from_to_map的临界区
 //构造函数
-server::server(int port,string ip):server_port(port),server_ip(ip){}
+server::server(int port,string ip):server_port(port),server_ip(ip){
+    pthread_mutex_init(&name_sock_mutx, NULL); //创建互斥锁
+    pthread_mutex_init(&group_mutx, NULL); //创建互斥锁
+    pthread_mutex_init(&from_mutex, NULL); //创建互斥锁
+}
 
 //析构函数
 server::~server()
@@ -35,18 +41,133 @@ server::~server()
     }
     close(server_sockfd);
 }
+// //将参数的文件描述符设置为非阻塞
+// void server::setnonblocking(int sock)
+// {
+//     int opts;
+//     opts=fcntl(sock,F_GETFL);
+//     if(opts<0)
+//     {
+//         perror("fcntl(sock,GETSL)");
+//         exit(1);
+//     }
+//     opts=opts|O_NONBLOCK;
+//     if(fcntl(sock,F_SETFL,opts)<0)
+//     {
+//         perror("fcntl(sock,SETFL,opts)");
+//         exit(1);
+//     }
+
+// }
+void SetNonBlocking(int sockfd) {
+        int flags = fcntl(sockfd, F_GETFL, 0);
+        if (flags == -1) {
+            perror("fcntl");
+            exit(1);
+        }
+
+        if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1) {
+            perror("fcntl");
+            exit(1);
+        }
+    }
+
 
 //服务器开始服务
 void server::run()
-{
-     //定义sockfd
-    server_sockfd = socket(AF_INET,SOCK_STREAM, 0);
+ {
+    // //listen的backlog大小
+    // int LISTENQ=200;
+    // int i,maxi,listenfd,connfd,sockfd,epfd,nfds;
+    // ssize_t n;
+    // //char line[MAXLINE];
+    // socklen_t clilen;
+    // //声明epoll_event结构体变量，ev用于注册事件，数组用于回传要处理的事件
+    // struct epoll_event ev,events[10000];
+    // //生成用于处理accept的epoll专用的文件描述符
+    // epfd=epoll_create(10000);
+    // struct sockaddr_in clientaddr;
+    // struct sockaddr_in serveraddr;
+    // listenfd=socket(PF_INET,SOCK_STREAM,0);
+    // //把socket设置为非阻塞方式
+    // setnonblocking(listenfd);
+    // //设置与要处理的事件相关的文件描述符
+    // ev.data.fd=listenfd;
+    // //设置要处理的事件类型
+    // ev.events=EPOLLIN|EPOLLET;
+    // //注册epoll事件
+    // epoll_ctl(epfd,EPOLL_CTL_ADD,listenfd,&ev);
+    // //设置serveraddr
+    // bzero(&serveraddr,sizeof(serveraddr));
+
+
+
+    //  //定义sockfd
+    // server_sockfd = socket(AF_INET,SOCK_STREAM, 0);
+    // serveraddr.sin_family = AF_INET;//TCP/IP协议族
+    // serveraddr.sin_port = htons(server_port);//server_port;//端口号
+    // serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");//ip地址，127.0.0.1是环回地址，相当于本机ip
+    // bind(listenfd,(sockaddr*)&serveraddr,sizeof(serveraddr));
+    // listen(listenfd,LISTENQ);
+    // clilen=sizeof(clientaddr);
+    // maxi=0;
+    // //定义一个10线程的线程池
+    // boost::asio::thread_pool tp(10);
+    // while(1)
+    // {
+    //             cout<<"--------------------------"<<endl;
+    //     cout<<"epoll_wait阻塞中"<<endl;
+    //     //等待epoll事件的发生
+    //     nfds=epoll_wait(epfd,events,10000,-1);//最后一个参数是timeout，0:立即返回，-1:一直阻塞直到有事件，x:等待x毫秒
+    //     cout<<"epoll_wait返回，有事件发生"<<endl;
+    //     //处理所发生的所有事件
+    //     for(i=0;i<nfds;++i)
+    //     {
+    //         //有新客户端连接服务器
+    //         if(events[i].data.fd==listenfd)
+    //         {
+    //             connfd = accept(listenfd,(sockaddr *)&clientaddr, &clilen);
+    //             if(connfd<0){
+    //                  perror("connfd<0");
+    //                  exit(1);
+    //             }
+    //             else{
+    //                 cout<<"用户"<<inet_ntoa(clientaddr.sin_addr)<<"正在连接\n";
+    //             }
+    //             //设置用于读操作的文件描述符
+    //             ev.data.fd=connfd;
+    //             //设置用于注册的读操作事件，采用ET边缘触发，为防止多个线程处理同一socket而使用EPOLLONESHOT
+    //             ev.events=EPOLLIN|EPOLLET|EPOLLONESHOT;
+    //             //边缘触发要将套接字设为非阻塞
+    //             setnonblocking(connfd);
+    //             //注册ev
+    //             epoll_ctl(epfd,EPOLL_CTL_ADD,connfd,&ev);
+    //         }
+    //         //接收到读事件
+    //         else if(events[i].events&EPOLLIN)
+    //         {
+    //             sockfd = events[i].data.fd;
+    //             events[i].data.fd=-1;
+    //             cout<<"接收到读事件"<<endl;
+
+    //             string recv_str;
+    //             boost::asio::post(boost::bind(RecvMsg,epfd,sockfd)); //加入任务队列，处理事件
+    //         }
+    //     }
+    // }
+    // close(listenfd);
+
+
+
+
+   //定义sockfd
+    int server_sockfd = socket(AF_INET,SOCK_STREAM, 0);
 
     //定义sockaddr_in
     struct sockaddr_in server_sockaddr;
     server_sockaddr.sin_family = AF_INET;//TCP/IP协议族
-    server_sockaddr.sin_port = htons(server_port);//server_port;//端口号
-    server_sockaddr.sin_addr.s_addr = inet_addr(server_ip.c_str());//ip地址，127.0.0.1是环回地址，相当于本机ip
+    server_sockaddr.sin_port = htons(8023);//端口号
+    server_sockaddr.sin_addr.s_addr = inet_addr("127.0.0.1");//ip地址，127.0.0.1是环回地址，相当于本机ip
 
     //bind，成功返回0，出错返回-1
     if(bind(server_sockfd,(struct sockaddr *)&server_sockaddr,sizeof(server_sockaddr))==-1)
@@ -128,6 +249,36 @@ void server::RecvMsg(int conn)
     */
    get<0>(info)=false;//把if_login置为false
    get<3>(info)=-1;//target_conn置为-1
+
+    // string recv_str;
+    // while(1){
+    //     char buf[1000];
+    //     memset(buf, 0, sizeof(buf));
+    //     int ret  = recv(conn, buf, sizeof(buf), 0);
+    //     if(ret < 0){
+    //         cout<<"recv返回值小于0"<<endl;
+    //         //对于非阻塞IO，下面的事件成立标识数据已经全部读取完毕
+    //         if((errno == EAGAIN) || (errno == EWOULDBLOCK)){
+    //                 printf("数据读取完毕\n");
+    //             cout<<"接收到的完整内容为："<<recv_str<<endl;
+    //             cout<<"开始处理事件"<<endl;
+    //             break;
+    //         }
+    //         cout<<"errno:"<<errno<<endl;
+    //         return;
+    //     }
+    //     else if(ret == 0){
+    //         cout<<"recv返回值为0"<<endl;
+    //         return;
+    //     }
+    //     else{
+    //         printf("接收到内容如下: %s\n",buf);
+    //         string tmp(buf);
+    //         recv_str+=tmp;
+    //     }
+    // }
+    // string str=recv_str;
+    // HandleRequest(epollfd,conn,str,info);
 
    //接收缓冲区
     char buffer[1000];
@@ -220,7 +371,7 @@ void server::HandleRequest(int conn,string str,tuple<bool,string,string,int,int>
                 string str1="ok";
                 if_login=true;
                 login_name=user.name;//记录下当前登录的用户名
-
+                send(conn,str1.c_str(),str1.length()+1,0);
 
                 // 查询数据库中的待接收消息
 string retrieve_messages_query = "SELECT * FROM messages WHERE receiver = '" + login_name + "';";
@@ -232,18 +383,23 @@ if (result != 0) {
   MYSQL_RES* query_result = mysql_store_result(con);
   int num_rows = mysql_num_rows(query_result);
   if (num_rows > 0) {
+    send(conn,"1",10,0);
     cout << "您有 " << num_rows << " 条待接收的消息：" << endl;
+    //send(conn,to_string(num_rows).c_str(),to_string(num_rows).length(),0);
     // 遍历查询结果并输出消息内容
     MYSQL_ROW row;
     while ((row = mysql_fetch_row(query_result))) {
       string sender = row[1];
       string message = row[3];
      string output_message = "[" + sender + "]: " + message + "\n";
-
+cout<<output_message<<endl;
   // 发送消息给客户端
   send(conn, output_message.c_str(), output_message.length(), 0);
     }
+
+
   } else {
+    send(conn,"2",10,0);
     cout << "没有待接收的消息。" << endl;
   }
   mysql_free_result(query_result);
@@ -259,7 +415,7 @@ if (result != 0) {
                 pthread_mutex_lock(&name_sock_mutx);//上锁
                 name_sock_map[login_name]=conn;//记录下名字和文件描述符的对应关系
                 pthread_mutex_unlock(&name_sock_mutx);//解锁
-                send(conn,str1.c_str(),str1.length()+1,0);
+            
                          
             }
             //密码错误
@@ -327,7 +483,7 @@ if (result != 0) {
             if (num_rows > 0)
             {
                 cout << "好友关系已存在，无需重复添加" << endl;
-                // 处理好友关系已存在的情况
+                // 处理好友关系已存在的情况       
             }
              else 
             {
@@ -490,11 +646,12 @@ if (result != 0) {
     //接收到消息，转发
     else if(str.find("content:")!=str.npos)
     {
+
         if(target_conn==-1)
         {
             cout<<"找不到目标用户"<<target_name<<"的套接字,将尝试重新寻找目标用户的套接字\n";
               // 存储消息到数据库
-string store_message_query = "INSERT INTO messages (sender, receiver, message) VALUES ('" + login_name + "', '" + target_name + "', '" + str.substr(7) + "');";
+string store_message_query = "INSERT INTO messages (sender, receiver, message) VALUES ('" + login_name + "', '" + target_name + "', '" + str.substr(8) + "');";
 int result = mysql_query(con, store_message_query.c_str());
 if (result != 0) {
   cout << "存储消息失败: " << mysql_error(con) << endl;
@@ -568,6 +725,7 @@ if (result != 0) {
         Group groupobj=Group::fromjson(str);
         string groupnum=groupobj.group_num;
         string leader=groupobj.logiin_name.substr(5);
+        string type=groupobj.group_type;
         //检查群组是否已经存在
         string check="SELECT *FROM MYGROUP WHERE num='" +groupnum+ "'";
         int result=mysql_query(con,check.c_str());
@@ -587,10 +745,19 @@ if (result != 0) {
             }
             else
             {
-                string create="INSERT INTO MYGROUP (num,member,leader) VALUES ('"+groupnum+"','"+leader+"','"+leader+"')";
+                if(type=="y"){
+                string create1="INSERT INTO MYGROUP (num,member,leader,type) VALUES ('"+groupnum+"','"+leader+"','"+leader+"','y')";
+                cout<<"sql语句"<<create1<<endl;
+                mysql_query(con, create1.c_str());
+                cout << "创建群组成功，群账号：" << groupnum << endl;
+                }
+                else
+                {
+                string create="INSERT INTO MYGROUP (num,member,leader,type) VALUES ('"+groupnum+"','"+leader+"','"+leader+"','n')";
                 cout<<"sql语句"<<create<<endl;
                 mysql_query(con, create.c_str());
                 cout << "创建群组成功，群账号：" << groupnum << endl;
+                }
                 // 发送响应到客户端
                 // send(conn, "success", 7, 0);
             }
@@ -652,6 +819,91 @@ if (result != 0) {
         
 
     }
+    //申请加入某个群组
+    else if(str.find("join:")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string groupnum=groupobj.group_num;
+        string from=groupobj.logiin_name.substr(5);
+        //检查群组是否存在
+        string check="SELECT * FROM MYGROUP WHERE num='" +groupnum+ "'";
+        int result=mysql_query(con,check.c_str());
+        if(result!=0)
+        {
+            cout<<"查询错误"<<mysql_error(con)<<endl;
+        }
+        else
+        {
+            MYSQL_RES* query_result=mysql_store_result(con);
+            int num_rows=mysql_num_rows(query_result);
+            if(num_rows>0)
+            {
+                //群组存在，检查是否需要群主同意加入
+                string typ="SELECT type FROM MYGROUP WHERE num='" +groupnum+ "'";
+                result = mysql_query(con, typ.c_str());
+                if (result != 0) {
+                cout << "查询错误：" << mysql_error(con) << endl;
+                } 
+                else{
+                    MYSQL_RES* join_type_result = mysql_store_result(con);
+                    if (join_type_result != nullptr) {
+                    MYSQL_ROW row = mysql_fetch_row(join_type_result);
+                    if (row != nullptr) {
+                        string joinType = row[0]; //获取加入方式
+                        if(joinType=="y")
+                        {
+                            
+                        }
+                        else
+                        {
+                            string sqll="SELECT member FROM MYGROUP WHERE num='" +groupnum+ "'";
+                            cout<<"sql语句"<<sqll<<endl;
+                            int resultt=mysql_query(con,sqll.c_str());
+                            if(resultt!=0)
+                            {
+                             cout<<"查询错误"<<mysql_error(con)<<endl;
+                            }
+                            else
+                            {
+                                MYSQL_RES* query_result = mysql_store_result(con);
+                                if (query_result != nullptr) 
+                                {
+                                    MYSQL_ROW row = mysql_fetch_row(query_result);
+                                    if (row != nullptr) 
+                                    {
+                                        cout<<"你已经是该群的成员"<<endl;
+                                    }
+                                    else
+                                    {
+                                        string search="UPDATE MYGROUP SET member = CONCAT(member, '," +from+ "') WHERE num = '" +groupnum+ "';";
+                                        mysql_query(con, search.c_str());
+                                        std::cout << "sql语句:" << search << endl;
+                                    }
+                                }
+                                mysql_free_result(query_result);
+                            }
+
+                        }
+                    }
+                    else{
+                        cout << "找不到群号为" << groupnum << "的群组" << endl;
+                        // 发送响应到客户端
+                        // send(conn, "failed", 7, 0);
+                    }
+                     mysql_free_result(join_type_result);
+                }
+
+            }
+            }
+             else {
+            // 群组不存在
+            cout << "群组不存在，无法加入" << endl;
+            // 发送响应到客户端
+            // send(conn, "failed", 7, 0);
+                    }
+
+        }
+    }
     //绑定群聊号
     else if(str.find("group:")!=str.npos)
     {
@@ -679,6 +931,10 @@ if (result != 0) {
         }
     }
 
+
+   
+
+    mysql_close(con);
      //更新实参
     get<0>(info)=if_login;//记录当前服务对象是否成功登录
     get<1>(info)=login_name;//记录当前服务对象的名字
