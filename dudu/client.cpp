@@ -115,6 +115,7 @@ cout<<" -------------------------------------------\n";
         cout<<"|              12:加入某个群组                |\n";
         cout<<"|              13:查看已加入的群组             |\n";
         cout<<"|              14:退出某个群组                |\n";
+        cout<<"|              15:查看群成员列表              |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -494,6 +495,26 @@ void client::HandleClient(int conn)
             string str=groupobj.tojson();
             send(conn,str.c_str(),str.length(),0);
             cout<<"已发送退出群组的请求\n\n";
+        }
+        else if(choice==15)
+        {
+            string groupNum;
+            cout<<"请输入要查询群成员的群组的账号：";
+            cin>>groupNum;
+            //发送加入群组的请求
+            Group groupobj;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            groupobj.group_num="gmem:"+groupNum;
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送查询群成员的请求\n\n";
+            char buffer[1000];
+            memset(buffer, 0, sizeof(buffer));
+            recv(sock, buffer, sizeof(buffer), 0);
+            string response(buffer);
+            cout << "查询结果：" << response << endl;
+            sleep(10);
+
         }
         else if(choice==13)
         {
