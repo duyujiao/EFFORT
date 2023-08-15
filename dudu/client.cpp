@@ -12,6 +12,7 @@
 using namespace std;
 #include"client.h"
 #include"class.hpp"
+#include"readnwriten.hpp"
 
 
 
@@ -110,7 +111,8 @@ cout<<" -------------------------------------------\n";
         cout<<"|              8:解除屏蔽                     |\n";        
         cout<<"|              9:发起群聊                     |\n";
         cout<<"|              10:群组创建                    |\n";
-         cout<<"|             11:群组解散                    |\n";
+        cout<<"|              11:群组解散                    |\n";
+        cout<<"|              12:加入某个群组                |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -205,6 +207,32 @@ void client::HandleClient(int conn)
                     login_name=user.name;
                     cout<<"登陆成功\n\n";
 
+                    char buf[1000];
+                memset(buf,0,sizeof(buf));
+                recv(sock,buf,sizeof(buf),0);//接受响应
+                string recv_str(buf);
+        
+                     
+                if(recv_str=="1")
+                {
+                //     char bu[1000];
+                // memset(bu,0,sizeof(bu));
+                // recv(sock,bu,sizeof(bu),0);//接受响应
+                // cout<<bu<<endl;
+                // int b = std::atoi(bu);
+                //  while(b>0)
+                //       {
+                    cout<<"你有新消息"<<endl;
+                   char buff[1000];
+                memset(buff,0,sizeof(buff));
+                recv(sock,buff,sizeof(buff),0);
+                cout<<buff<<endl;
+                // b--;//接受响应
+                // }
+               sleep(10);
+                break;
+                }               
+            else
               break;
                 }
                 //登陆失败
@@ -219,7 +247,6 @@ void client::HandleClient(int conn)
     //登录成功
     while(if_login&&1)
     {
-
 
     if(if_login){
         system("clear");//清空终端d
@@ -375,10 +402,24 @@ void client::HandleClient(int conn)
             string groupNum;
             cout<<"请输入要创建的群组账号：";
             cin>>groupNum;
+            string agree;
+            bool validInput = false;
+
+            while (!validInput) {
+            cout << "请输入要创建的群组成员加入是否需要你的同意 (y or n): ";
+            cin >> agree;
+
+            if (agree == "y" || agree == "n") {
+            validInput = true;
+            } else {
+            cout << "输入无效，请重新输入。\n";
+            }
+            } 
             //发送创建群组的请求
             Group groupobj;
             groupobj.group_num="create:"+groupNum;
             groupobj.logiin_name="from:"+login_name.substr(5);
+            groupobj.group_type=agree;
             string str=groupobj.tojson();
             send(conn,str.c_str(),str.length(),0);
             cout<<"已发送创建群组的请求\n\n";
@@ -425,6 +466,19 @@ void client::HandleClient(int conn)
             // // 处理解散群组失败的情况
             // }
             client::Menu();
+        }
+        else if(choice==12)
+        {
+            string groupNum;
+            cout<<"请输入要加入的群组的账号";
+            cin>>groupNum;
+            //发送加入群组的请求
+            Group groupobj;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            groupobj.group_num="join:"+groupNum;
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送加入群组的请求\n\n";
         }
 
     }
