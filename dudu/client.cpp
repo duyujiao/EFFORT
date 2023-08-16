@@ -116,6 +116,8 @@ cout<<" -------------------------------------------\n";
         cout<<"|              13:查看已加入的群组             |\n";
         cout<<"|              14:退出某个群组                |\n";
         cout<<"|              15:查看群成员列表              |\n";
+        cout<<"|              16:添加管理员                 |\n";
+        cout<<"|              17:取消管理员                 |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -515,6 +517,42 @@ void client::HandleClient(int conn)
             cout << "查询结果：" << response << endl;
             sleep(10);
 
+        }
+        else if(choice==16)
+        {
+            string groupNum;
+            cout<<"请输入要添加管理员的群组的账号：";
+            cin>>groupNum;
+            string adminName;
+            cout<<"请输入要添加的管理员的名字：";
+            cin>>adminName;
+            Group groupobj;
+            groupobj.group_num=groupNum;
+            groupobj.group_admin="increase:"+adminName;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送添加管理员的请求\n\n";
+            client::Menu();
+
+        }
+        else if(choice==17)
+        {
+
+            string groupNum;
+            cout<<"请输入要取消管理员的群组的账号：";
+            cin>>groupNum;
+            string adminName;
+            cout<<"请输入要取消的管理员的名字：";
+            cin>>adminName;
+            Group groupobj;
+            groupobj.group_num=groupNum;
+            groupobj.group_admin="decrease:"+adminName;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送取消管理员的请求\n\n";
+            client::Menu();
         }
         else if(choice==13)
         {
