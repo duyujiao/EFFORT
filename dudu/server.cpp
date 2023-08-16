@@ -531,6 +531,74 @@ if (result != 0) {
         cout << "已删除好友：" << friendobj.nameadd << endl << endl;
 
     }
+    else if(str.find("increase:")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string leader=groupobj.logiin_name.substr(5);
+        string admin=groupobj.group_admin;
+        string groupnum=groupobj.group_num;
+        string typ="SELECT leader FROM MYGROUP WHERE num='" +groupnum+ "'";
+        int result = mysql_query(con, typ.c_str());
+        if (result != 0) {
+            cout << "查询错误：" << mysql_error(con) << endl;
+            } 
+        else
+        {
+            MYSQL_RES* join_type_result = mysql_store_result(con);
+            if (join_type_result != nullptr) {
+            MYSQL_ROW row = mysql_fetch_row(join_type_result);
+            if (row != nullptr) {
+            string joinType = row[0]; 
+            if(joinType==leader)
+            {
+                string search="UPDATE MYGROUP SET manager=CONCAT(IFNULL(manager,''),',"+admin+"')WHERE leader='"+leader+"' AND num='"+groupnum+"';";
+                cout<<"SQL语句:"<<search<<endl;
+                cout<<"已取消群号为"<<groupnum<<"管理员"<<admin<<endl<<endl;
+            }
+            else
+            {
+                cout<<"你不是群主无法执行取消管理员操作"<<endl;
+            }
+            }
+            }
+            mysql_free_result(join_type_result);
+        }
+    }
+    else if(str.find("decrease:")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string leader=groupobj.logiin_name.substr(5);
+        string admin=groupobj.group_admin;
+        string groupnum=groupobj.group_num;
+        //群组存在，检查是否需要群主同意加入
+        string typ="SELECT leader FROM MYGROUP WHERE num='" +groupnum+ "'";
+        int result = mysql_query(con, typ.c_str());
+        if (result != 0) {
+            cout << "查询错误：" << mysql_error(con) << endl;
+            } 
+        else
+        {
+            MYSQL_RES* join_type_result = mysql_store_result(con);
+            if (join_type_result != nullptr) {
+            MYSQL_ROW row = mysql_fetch_row(join_type_result);
+            if (row != nullptr) {
+            string joinType = row[0]; 
+            if(joinType==leader)
+            {
+                string search="UPDATE MYGROUP SET manager=TRIM(TRAILING',"+admin+"' FROM SUBSTRING_INDEX (CONCAT(manager,','),',"+admin+"',1)) WHERE leader='"+leader+"' AND num='"+groupnum+"';";
+                cout<<"SQL语句:"<<search<<endl;
+                cout<<"已取消群号为"<<groupnum<<"管理员"<<admin<<endl<<endl;
+            }
+            else
+            {
+                 cout<<"你不是群主无法执行取消管理员操作"<<endl;
+            }
+            }
+            }
+            mysql_free_result(join_type_result);
+            }
+    }
+
     else if(str.find("querry")!=str.npos)
     {
         Friend friendobj = Friend::fromjson(str);
