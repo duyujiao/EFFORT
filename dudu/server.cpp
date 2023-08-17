@@ -571,12 +571,11 @@ if (result != 0) {
         string leader=groupobj.logiin_name.substr(5);
         string admin=groupobj.group_admin;
         string groupnum=groupobj.group_num;
-        //群组存在，检查是否需要群主同意加入
         string typ="SELECT leader FROM MYGROUP WHERE num='" +groupnum+ "'";
         int result = mysql_query(con, typ.c_str());
         if (result != 0) {
             cout << "查询错误：" << mysql_error(con) << endl;
-            } 
+            }
         else
         {
             MYSQL_RES* join_type_result = mysql_store_result(con);
@@ -594,6 +593,41 @@ if (result != 0) {
             else
             {
                  cout<<"你不是群主无法执行取消管理员操作"<<endl;
+            }
+            }
+            }
+            mysql_free_result(join_type_result);
+            }
+    }
+    else if(str.find("kick")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string leader=groupobj.logiin_name.substr(5);
+        string kick=groupobj.group_kick;
+        string groupnum=groupobj.group_num;
+        string typ="SELECT leader,manager FROM MYGROUP WHERE num='" +groupnum+ "'";
+        int result = mysql_query(con, typ.c_str());
+        if (result != 0) {
+            cout << "查询错误：" << mysql_error(con) << endl;
+            }
+        else
+        {
+            MYSQL_RES* join_type_result = mysql_store_result(con);
+            if (join_type_result != nullptr) {
+            MYSQL_ROW row = mysql_fetch_row(join_type_result);
+            if (row != nullptr) {
+            string master = row[0]; //群主
+            string manager=row[1];//管理员
+            if(leader==master||leader==manager)
+            {
+                string search="UPDATE MYGROUP SET member=TRIM(TRAILING',"+kick+"' FROM SUBSTRING_INDEX (CONCAT(member,','),',"+kick+"',1)) WHERE (leader='" + leader + "' OR manager='" + manager + "') AND num='"+groupnum+"';";
+                cout<<"SQL语句:"<<search<<endl;
+                mysql_query(con, search.c_str());
+                cout<<"已踢出群号为"<<groupnum<<"成员"<<kick<<endl<<endl;
+            }
+            else
+            {
+                 cout<<"你不是群主或者管理员无法执行取消管理员操作"<<endl;
             }
             }
             }
@@ -1109,7 +1143,7 @@ if (result != 0) {
         Group groupobj=Group::fromjson(str);
         string from=groupobj.logiin_name.substr(5);
         string groupnum=groupobj.group_num;
-        string sqll="SELECT leader FROM MYGROUP WHERE num='" +groupnum+ "'";
+        string sqll="SELECT manager FROM MYGROUP WHERE num='" +groupnum+ "'";
         cout<<"sql语句"<<sqll<<endl;
         int resultt=mysql_query(con,sqll.c_str());
         if(resultt!=0)
@@ -1125,8 +1159,8 @@ if (result != 0) {
             if (row != nullptr) 
             {
                 string master=row[0];
-                cout<<"群号"<<groupnum<<"的群主是"<<master<<endl;
-                if(master==from)
+                cout<<"群号"<<groupnum<<"的管理员是"<<master<<endl;
+                if(master.find(from)!=master.npos)
                 {
                     string search="SELECT request FROM MYGROUP WHERE num='"+groupnum+"'";
                     cout << "SQL语句:" << search << endl;
@@ -1171,7 +1205,7 @@ if (result != 0) {
                 }
                 else
                 {
-                    cout << "你不是群主，无法查看加群请求" << endl;
+                    cout << "你不是群主或者管理员，无法查看加群请求" << endl;
                     string messag = "No addgrouprequest found";
                     send(conn, messag.c_str(), messag.length(), 0);
                      // send(conn, "failed", 7, 0);
@@ -1183,11 +1217,7 @@ if (result != 0) {
             mysql_free_result(query_result);
             }
         }
-
-
-
-
-        
+      
 
     }
 
