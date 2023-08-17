@@ -118,6 +118,7 @@ cout<<" -------------------------------------------\n";
         cout<<"|              15:查看群成员列表              |\n";
         cout<<"|              16:添加管理员                 |\n";
         cout<<"|              17:取消管理员                 |\n";
+        cout<<"|              18:查看是否有人申请加入群聊     |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -516,6 +517,43 @@ void client::HandleClient(int conn)
             string response(buffer);
             cout << "查询结果：" << response << endl;
             sleep(10);
+
+        }
+        else if(choice==18)
+        {
+            string groupNum;
+            cout<<"请输入要查看申请的群组的账号：";
+            cin>>groupNum;
+            Group groupobj;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            groupobj.group_num="view"+groupNum;
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送查看申请的请求\n\n";
+            char buffer[1000];
+            memset(buffer, 0, sizeof(buffer));
+            recv(sock, buffer, sizeof(buffer), 0);
+            string response(buffer);
+            cout << "查询结果：" << response << endl;
+
+            if(response!="No addgrouprequest found")
+            {
+                cout<<"是否同意将该用户添加到群组?(y/n):";
+                char c;
+                cin>>c;
+                if(c=='y'||c=='Y')
+                {
+                    string approveRequest="approve:"+groupNum;
+                    send(conn,approveRequest.c_str(),approveRequest.length(),0);
+                    cout<<"已发送同意请求\n"; 
+                }
+                else if(c=='n')
+                {
+                    string rejectRequest = "reject:" + groupNum;
+                    send(conn, rejectRequest.c_str(), rejectRequest.length(), 0);
+                    cout << "已发送拒绝请求\n";
+                }
+            }
 
         }
         else if(choice==16)
