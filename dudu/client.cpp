@@ -97,7 +97,7 @@ void client::RecvMsg(int conn){
 
 void client::Menu()
 {
-cout<<" -------------------------------------------\n";
+        cout<<" -------------------------------------------\n";
         cout<<"|                                           |\n";
         cout<<"|          请选择你要的选项：               |\n";
         cout<<"|              0:退出                       |\n";
@@ -119,6 +119,7 @@ cout<<" -------------------------------------------\n";
         cout<<"|              16:添加管理员                 |\n";
         cout<<"|              17:取消管理员                 |\n";
         cout<<"|              18:查看是否有人申请加入群聊     |\n";
+        cout<<"|              19:踢人                       |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -576,7 +577,6 @@ void client::HandleClient(int conn)
         }
         else if(choice==17)
         {
-
             string groupNum;
             cout<<"请输入要取消管理员的群组的账号：";
             cin>>groupNum;
@@ -591,6 +591,22 @@ void client::HandleClient(int conn)
             send(conn,str.c_str(),str.length(),0);
             cout<<"已发送取消管理员的请求\n\n";
             client::Menu();
+        }
+        else if(choice==19)
+        {
+            string groupNum;
+            cout<<"请输入要踢人的群组的账号：";
+            cin>>groupNum;
+            string kickName;
+            cout<<"请输入要踢的名字：";
+            cin>>kickName;
+            Group groupobj;
+            groupobj.group_num=groupNum;
+            groupobj.group_kick="kick:"+kickName;
+            groupobj.logiin_name="from:"+login_name.substr(5);
+            string str=groupobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            cout<<"已发送踢出的请求\n\n";
         }
         else if(choice==13)
         {
