@@ -553,7 +553,8 @@ if (result != 0) {
             {
                 string search="UPDATE MYGROUP SET manager=CONCAT(IFNULL(manager,''),',"+admin+"')WHERE leader='"+leader+"' AND num='"+groupnum+"';";
                 cout<<"SQL语句:"<<search<<endl;
-                cout<<"已取消群号为"<<groupnum<<"管理员"<<admin<<endl<<endl;
+                mysql_query(con, search.c_str());
+                cout<<"已添加群号为"<<groupnum<<"管理员"<<admin<<endl<<endl;
             }
             else
             {
@@ -587,6 +588,7 @@ if (result != 0) {
             {
                 string search="UPDATE MYGROUP SET manager=TRIM(TRAILING',"+admin+"' FROM SUBSTRING_INDEX (CONCAT(manager,','),',"+admin+"',1)) WHERE leader='"+leader+"' AND num='"+groupnum+"';";
                 cout<<"SQL语句:"<<search<<endl;
+                mysql_query(con, search.c_str());
                 cout<<"已取消群号为"<<groupnum<<"管理员"<<admin<<endl<<endl;
             }
             else
@@ -921,6 +923,9 @@ if (result != 0) {
                         if(joinType=="y")
                         {
                             //怎么实现对群主发送加群申请，群主并且同意
+                            string s="UPDATE MYGROUP SET request=CONCAT(IFNULL(request,''),',"+from+"')WHERE num='"+groupnum+"';";
+                            cout<<"sql语句"<<s<<endl;
+                            mysql_query(con, s.c_str());
                         }
                         else
                         {
@@ -945,7 +950,7 @@ if (result != 0) {
                                     }
                                     else
                                     {
-                                        string search="UPDATE MYGROUP SET member = CONCAT(member, '," +from+ "') WHERE num = '" +groupnum+ "';";
+                                        string search="UPDATE MYGROUP SET member = CONCAT(IFNULL(member,''), '," +from+ "') WHERE num = '" +groupnum+ "';";
                                         mysql_query(con, search.c_str());
                                         std::cout << "sql语句:" << search << endl;
                                         cout<<"已加入该群"<<endl;
@@ -1098,6 +1103,92 @@ if (result != 0) {
         string message = "No groupsmember found";
         send(conn, message.c_str(), message.length(), 0);
     }
+    }
+    else if(str.find("view")!=str.npos)
+    {
+        Group groupobj=Group::fromjson(str);
+        string from=groupobj.logiin_name.substr(5);
+        string groupnum=groupobj.group_num;
+        string sqll="SELECT leader FROM MYGROUP WHERE num='" +groupnum+ "'";
+        cout<<"sql语句"<<sqll<<endl;
+        int resultt=mysql_query(con,sqll.c_str());
+        if(resultt!=0)
+        {
+            cout<<"查询错误"<<mysql_error(con)<<endl;
+        }
+        else
+        {
+            MYSQL_RES* query_result = mysql_store_result(con);
+            if (query_result != nullptr) 
+            {
+            MYSQL_ROW row = mysql_fetch_row(query_result);
+            if (row != nullptr) 
+            {
+                string master=row[0];
+                cout<<"群号"<<groupnum<<"的群主是"<<master<<endl;
+                if(master==from)
+                {
+                    string search="SELECT request FROM MYGROUP WHERE num='"+groupnum+"'";
+                    cout << "SQL语句:" << search << endl;
+                    mysql_query(con, search.c_str());
+                    auto result = mysql_store_result(con);
+                    int numGroups = mysql_num_rows(result);
+
+                    if (numGroups > 0) {
+                    cout << "Found the following addgrouprequest:" << endl;
+                    string groupList;
+                    for (int i = 0; i < numGroups; i++) {
+                    auto row = mysql_fetch_row(result);
+                    string groupName = row[0];
+                    cout << groupName << endl;
+                    groupList += groupName + ",";
+            }
+            // Send group information to the client
+            send(conn, groupList.c_str(), groupList.length(), 0);
+            // 接收客户端的同意或拒绝请求
+            char buf[1000];
+            memset(buf, 0, sizeof(buf));
+            recv(conn, buf, sizeof(buf), 0);
+            string decision(buf);
+            if(decision.find("approve:")!=decision.npos)
+            {
+            string s="UPDATE MYGROUP SET member = CONCAT(member, request), request = '' WHERE num = '"+groupnum+"';";
+            cout << "SQL语句:" << s << endl;
+            mysql_query(con, s.c_str());
+            cout << "已将用户添加到群组 " << groupnum << " 的 member 列中\n";
+            }
+            else if(decision.find("reject:")!=decision.npos)
+            {
+            cout << "已拒绝用户添加到群组 " << groupnum << " 的 member 列中\n";
+            }
+
+        } else {
+        cout << "No addgrouprequest found" << endl;
+        // Send "no groups found" message to the client
+        string message = "No addgrouprequest found";
+        send(conn, message.c_str(), message.length(), 0);
+        }
+                }
+                else
+                {
+                    cout << "你不是群主，无法查看加群请求" << endl;
+                    string messag = "No addgrouprequest found";
+                    send(conn, messag.c_str(), messag.length(), 0);
+                     // send(conn, "failed", 7, 0);
+                }
+            }
+            else{
+                cout<<"找不到群号为2的群组"<<endl;
+            }
+            mysql_free_result(query_result);
+            }
+        }
+
+
+
+
+        
+
     }
 
    
