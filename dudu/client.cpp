@@ -42,6 +42,7 @@ void client::run(){
         exit(1);
     }
     cout<<"连接服务器成功\n";
+    
     HandleClient(sock);
 
     //创建发送线程和接收线程
@@ -72,6 +73,7 @@ void client::SendMsg(int conn){
             str="gr_message:"+str;
         }
         int ret=send(abs(conn),str.c_str(),str.length(),0);
+ 
 
         //输入exit或者对端关闭时结束
         //if(strcmp(sendbuf,"exit")==0||ret<=0)
@@ -424,6 +426,7 @@ void client::HandleClient(int conn)
             string sendstr("group:"+to_string(num));
             send(sock,sendstr.c_str(),sendstr.length(),0);
             cout<<"请输入你想说的话(输入exit退出):\n";
+            
             thread t1(client::SendMsg,-conn);//创建发送线程，传入负数，和私聊区分开
             thread t2(client::RecvMsg,conn);//创建接收线程
             t1.join();
@@ -437,21 +440,17 @@ void client::HandleClient(int conn)
             cout<<"请输入对方的用户名：";
             string target_name,content;
             cin>>target_name;
-            // //检查好友关系
-            // string from_user = login_name.substr(5);
-            // string check_friendship_query = "SELECT * FROM FRIENDS WHERE NAME = '" + from_user + "' AND FIND_IN_SET('" + target_name + "', FRIENDS);";
-            // int result = mysql_query(con, check_friendship_query.c_str());
-
-
             Friend friendobj;
             friendobj.target_name="target:"+target_name;
             friendobj.logiin_name="from:"+login_name.substr(5);
+            string login=login_name.substr(5);
             string sendstr=friendobj.tojson();
            // string sendstr("target:"+target_name+"from:"+login_name);//标识目标用户+源用户
             send(sock,sendstr.c_str(),sendstr.length(),0);//先向服务器发送目标用户和源用户
             cout<<"请输入你想说的话(输入exit退出):\n";
             thread t1(client::SendMsg,conn); //创建发送线程
             thread t2(client::RecvMsg,conn);//创建接收线程
+
             t1.join();
             t2.join();
             break;
@@ -676,6 +675,39 @@ void client::HandleClient(int conn)
             string response(buffer);
             cout << "查询结果：" << response << endl;
             sleep(10);
+        }
+        else if(choice==21)
+        {
+            
+            MYSQL *co=mysql_init(NULL);
+            mysql_real_connect(co,"127.0.0.1","root","40111004","chatroom",0,NULL,CLIENT_MULTI_STATEMENTS);
+            // 查询数据库中的待接收消息
+            string retrieve_messages_query = "SELECT * FROM message WHERE receiver = '" + login_name.substr(5) + "';";
+            int result = mysql_query(co, retrieve_messages_query.c_str());
+            if (result != 0) {
+            cout << "检索消息失败: " << mysql_error(co) << endl;
+            // 处理检索失败的情况
+            } else {
+            MYSQL_RES* query_result = mysql_store_result(co);
+            int num_rows = mysql_num_rows(query_result);
+            if (num_rows > 0) {
+             cout << "您有 " << num_rows << " 条历史消息：" << endl;
+            // 遍历查询结果并输出消息内容
+            MYSQL_ROW row;
+            while ((row = mysql_fetch_row(query_result))) {
+            string sender = row[1];
+            string message = row[3];
+            string output_message = message + "\n";
+            cout<<output_message<<endl;
+        }
+
+
+  } else {
+    send(conn,"2",10,0);
+    cout << "没有待接收的消息。" << endl;
+  }
+  mysql_free_result(query_result);
+}
         }
 
     }
