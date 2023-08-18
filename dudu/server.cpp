@@ -861,6 +861,12 @@ if (result != 0) {
                 string send_str = recv_str.substr(8);
                 cout << "用户 " << login_name << " 向 " << target_name << " 发送 " << send_str << endl;
                 send_str = "[" + login_name + "]: " + send_str;
+                 // 存储消息到数据库
+    string store_message_query = "INSERT INTO message (sender, receiver, message) VALUES ('" + login_name + "', '" + target_name + "', '" +send_str+ "');";
+    int result = mysql_query(con, store_message_query.c_str());
+    if (result != 0) {
+        cout << "存储消息失败: " << mysql_error(con) << endl;
+    }
               
                 send(target_conn, send_str.c_str(), send_str.length(), 0);
                  // 处理好友关系的情况，执行私聊逻辑
