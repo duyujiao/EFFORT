@@ -234,7 +234,57 @@ void server::run()
 //         }
 //     }
 // }
+void recvFile(int conn)
+{
+     // 接收文件名和文件大小
+    char buffer[1024];
+    int bytes_received = recv(conn, buffer, sizeof(buffer) - 1, 0);
+    if (bytes_received <= 0) {
+        std::cout << "接收文件失败" << std::endl;
+        return;
+    }
+    buffer[bytes_received] = '\0';
 
+    std::string file_info(buffer);
+    size_t comma_pos = file_info.find(',');
+    if (comma_pos == std::string::npos) {
+        std::cout << "无效的文件信息格式" << std::endl;
+        return;
+    }
+    std::string filename = file_info.substr(0, comma_pos);
+    int file_size = std::stoi(file_info.substr(comma_pos + 1));
+
+    std::cout << "接收文件: " << filename <<  std::endl;
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cout << "创建文件失败" << filename << std::endl;
+        return;
+    }
+
+    // 接收文件内容并写入文件
+    const int buffer_size = 1024;
+    char recv_buffer[buffer_size];
+    int total_bytes_received = 0;
+     while (total_bytes_received < file_size) {
+        int byte_received = recv(conn, recv_buffer, buffer_size, 0);
+
+        if (byte_received <= 0) {
+            std::cout << "接收数据失败" << std::endl;
+            //break;
+        }
+        file.write(recv_buffer, byte_received);
+        total_bytes_received += byte_received;
+    }
+
+    file.close();
+
+    if (total_bytes_received == file_size) {
+        std::cout << "文件接收成功: " << filename << std::endl;
+    } else {
+        std::cout << "文件接收失败:" << filename << std::endl;
+    }
+
+}
 
 void server::RecvMsg(int conn)
 {
@@ -432,6 +482,14 @@ if (result != 0) {
             send(conn,str1,strlen(str1),0);
         }
         mysql_free_result(result);
+    }
+
+    else if(str.find("file")!=str.npos)
+    {
+        Friend friendobj = Friend::fromjson(str);
+        string file=friendobj.target_name.substr(4);
+        recvFile(conn);
+
     }
     else if (str == "logout") 
     {
