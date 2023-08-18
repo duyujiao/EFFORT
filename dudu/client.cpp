@@ -95,6 +95,46 @@ void client::RecvMsg(int conn){
 }
 
 
+bool CheckDuplicateFilename(const std::string& filename)
+{
+    //获取文件路径
+    std::filesystem::path filePath(filename);
+    //检查文件是否存在
+    return std::filesystem::exists(filePath);
+
+}
+void sendFile(const std::string& filename, int conn) {
+    // 打开文件
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    if (!file) {
+        std::cout << "打开文件失败: " << filename << std::endl;
+        return;
+    }
+
+    // 获取文件大小
+    std::streampos fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    // 发送文件名和文件大小信息给服务端
+    std::string fileInfo = filename + "," + std::to_string(fileSize);
+    send(conn, fileInfo.c_str(), fileInfo.size(), 0);
+
+    // 发送文件内容
+    const int bufferSize = 1024;
+    char sendBuffer[bufferSize];
+    while (!file.eof()) {
+        file.read(sendBuffer, bufferSize);
+        int bytesRead = file.gcount();
+        send(conn, sendBuffer, bytesRead, 0);
+    }
+
+    file.close();
+
+    std::cout << "文件发送成功: " << filename << std::endl;
+}
+
+
+
 void client::Menu()
 {
         cout<<" -------------------------------------------\n";
@@ -120,6 +160,7 @@ void client::Menu()
         cout<<"|              17:取消管理员                 |\n";
         cout<<"|              18:查看是否有人申请加入群聊     |\n";
         cout<<"|              19:踢人                       |\n";
+        cout<<"|              20:发送文件                    |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -256,13 +297,25 @@ void client::HandleClient(int conn)
     {
 
     if(if_login){
-        system("clear");//清空终端d
+        //system("clear");//清空终端d
         cout<<"        欢迎回来,"<<login_name.substr(5)<<endl;
         client::Menu();
         cin>>choice;
     }
         if(choice==0)
         break;
+        else if(choice==20)
+        {
+            string filename;
+            cout << "请输入要发送的文件名: ";
+            cin >> filename;
+            Friend friendobj;
+            friendobj.target_name="file"+filename;
+            string str2=friendobj.tojson();
+            send(conn,str2.c_str(),str2.length(),0);
+            sendFile(filename,sock);
+        }
+
          else if(choice==3)
         {
             printf("uuu");
