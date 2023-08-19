@@ -92,10 +92,34 @@ void client::RecvMsg(int conn){
         //recv返回值小于等于0，退出
         if(len<=0)
             break;
+        if(buffer=="你收到私聊消息")
+        {
+            cout<<buffer<<endl;
+            break;
+        }
         cout<<buffer<<endl;
     }
 }
-
+void recvv(int conn,string l){
+    //接收缓冲区
+    char buffer[1000];
+    //不断接收数据
+    while(1)
+    {
+        memset(buffer,0,sizeof(buffer));
+        int len = recv(conn, buffer, sizeof(buffer),0);
+        //recv返回值小于等于0，退出
+        if(len<=0)
+            break;
+        if(buffer=="你收到"+l+"私聊消息")
+        {
+            cout<<buffer<<endl;
+            break;
+        }
+        else
+ cout<<buffer<<endl;
+    }
+}
 
 bool CheckDuplicateFilename(const std::string& filename)
 {
@@ -297,15 +321,20 @@ void client::HandleClient(int conn)
     //登录成功
     while(if_login&&1)
     {
-
-    if(if_login){
+        string l=login_name.substr(5);   
+        thread t(recvv,conn,l);//消息实时通知
+        cout<<"收到了"<<endl;
+        if(if_login){
         //system("clear");//清空终端d
         cout<<"        欢迎回来,"<<login_name.substr(5)<<endl;
         client::Menu();
         cin>>choice;
     }
+
+            
         if(choice==0)
         break;
+
         else if(choice==20)
         {
             string filename;
