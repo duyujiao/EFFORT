@@ -799,8 +799,12 @@ if (result != 0) {
              cout<<"源用户"<<login_name<<"向目标用户"<<target_name<<"发起的私聊即将建立";
             cout<<",目标用户的套接字描述符为"<<name_sock_map[target]<<endl;
             target_conn=name_sock_map[target];
-
         
+            string mess="你收到"+login_name+"私聊消息";
+            // string b="siliao";
+            // send(target_conn, b.c_str(), b.length(), 0);
+            send(target_conn, mess.c_str(), mess.length(), 0);
+
 
         }
 
