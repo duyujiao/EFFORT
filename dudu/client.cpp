@@ -14,7 +14,7 @@ using namespace std;
 #include"class.hpp"
 #include"readnwriten.hpp"
 
-
+pthread_mutex_t client::m_mutex;
 
 client::client(int port,string ip):server_port(port),server_ip(ip){}
 client::~client()
@@ -92,15 +92,10 @@ void client::RecvMsg(int conn){
         //recv返回值小于等于0，退出
         if(len<=0)
             break;
-        if(buffer=="你收到私聊消息")
-        {
-            cout<<buffer<<endl;
-            break;
-        }
         cout<<buffer<<endl;
     }
 }
-void recvv(int conn,string l){
+void recvv(int conn){
     //接收缓冲区
     char buffer[1000];
     //不断接收数据
@@ -111,11 +106,6 @@ void recvv(int conn,string l){
         //recv返回值小于等于0，退出
         if(len<=0)
             break;
-        if(buffer=="你收到"+l+"私聊消息")
-        {
-            cout<<buffer<<endl;
-            break;
-        }
         else
  cout<<buffer<<endl;
     }
@@ -169,7 +159,7 @@ void client::Menu()
         cout<<"|              0:退出                       |\n";
         cout<<"|              1:发起单独聊天                |\n";
         cout<<"|              2:发起群聊                   |\n";
-        cout<<"|              3:添加好友                   |\n";
+        cout<<"|              3:请求添加好友                   |\n";
         cout<<"|              4:删除好友                   |\n";
         cout<<"|              5:查询好友                    |\n";
         cout<<"|              6:注销                        |\n";
@@ -187,6 +177,8 @@ void client::Menu()
         cout<<"|              18:查看是否有人申请加入群聊     |\n";
         cout<<"|              19:踢人                       |\n";
         cout<<"|              20:发送文件                    |\n";
+        cout<<"|               21:查看好友历史消息记录          |\n";
+        cout<<"|              22:好友申请列表                 |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -322,8 +314,9 @@ void client::HandleClient(int conn)
     while(if_login&&1)
     {
         string l=login_name.substr(5);   
-        thread t(recvv,conn,l);//消息实时通知
-        cout<<"收到了"<<endl;
+        // pthread_mutex_lock(&m_mutex);//上锁
+        // thread t(recvv,conn);//消息实时通知
+        // pthread_mutex_unlock(&m_mutex);//解锁
         if(if_login){
         //system("clear");//清空终端d
         cout<<"        欢迎回来,"<<login_name.substr(5)<<endl;
@@ -362,6 +355,42 @@ void client::HandleClient(int conn)
             cout<<"添加成功"<<endl;
             client::Menu();
 
+        }
+         else if(choice==22)
+        {
+            Friend friendobj;
+            friendobj.nameadd="apply";
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            string str=friendobj.tojson();
+            send(conn,str.c_str(),str.length(),0);
+            char buffer[1000];
+            memset(buffer, 0, sizeof(buffer));
+            recv(sock, buffer, sizeof(buffer), 0);
+            string response(buffer);
+            cout << "查询结果：" << response << endl;
+            string addname;
+            cout<<"请输入要添加的好友的名字"<<endl;
+            cin>>addname;
+            send(conn,addname.c_str(),addname.length(),0);
+            cout<<"是否同意将该用户添加到群组?(y/n):";
+            char c;
+            cin>>c;
+            if(response!="No addfriendsrequest found")
+            {
+            if(c=='y'||c=='Y')
+            { 
+                    string approveRequest="agree:";
+                    send(conn,approveRequest.c_str(),approveRequest.length(),0);
+                    cout<<"已发送同意请求\n"; 
+            }
+            else if(c=='n')
+            {
+                string rejectRequest = "unagree:" ;
+                send(conn, rejectRequest.c_str(), rejectRequest.length(), 0);
+                cout << "已发送拒绝请求\n";
+            }
+            }
+            
         }
         else if(choice==4)
         {
@@ -556,7 +585,7 @@ void client::HandleClient(int conn)
             client::Menu();
         }
         else if(choice==12)
-        {
+        {  
             string groupNum;
             cout<<"请输入要加入的群组的账号：";
             cin>>groupNum;
@@ -683,7 +712,7 @@ void client::HandleClient(int conn)
             cin>>kickName;
             Group groupobj;
             groupobj.group_num=groupNum;
-            groupobj.group_kick="kick:"+kickName;
+            groupobj.group_kick="kicck:"+kickName;
             groupobj.logiin_name="from:"+login_name.substr(5);
             string str=groupobj.tojson();
             send(conn,str.c_str(),str.length(),0);
@@ -730,7 +759,6 @@ void client::HandleClient(int conn)
             cout<<output_message<<endl;
         }
 
-
   } else {
     send(conn,"2",10,0);
     cout << "没有待接收的消息。" << endl;
@@ -738,6 +766,7 @@ void client::HandleClient(int conn)
   mysql_free_result(query_result);
 }
         }
+       
 
     }
     close(sock);
