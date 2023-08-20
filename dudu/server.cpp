@@ -525,6 +525,11 @@ if (result != 0) {
         string s="UPDATE FRIENDS SET request=CONCAT(IFNULL(request,''),',"+from+"')WHERE name='"+add+"';";
         cout<<"sql语句"<<s<<endl;
         mysql_query(con, s.c_str());
+
+        target_conn=name_sock_map[add];
+        string mess="你收到"+from+"加好友请求";
+        send(target_conn, mess.c_str(), mess.length(), 0);
+
     }
     else if (str.find("delete:") != str.npos) 
     {
@@ -676,7 +681,7 @@ if (result != 0) {
 
     }
     //屏蔽
-    else if(str.find("block:")!=str.npos)
+    else if(str.find("blocck:")!=str.npos)
     {
          Friend friendobj = Friend::fromjson(str);
          cout<<"收到屏蔽好友的请求"<<endl;
@@ -1308,8 +1313,6 @@ if (result != 0) {
             string decision(buf);
             if(decision.find("agree:")!=decision.npos)
             {
-
-
         string check_friendship_query = "SELECT * FROM FRIENDS WHERE name='" +from+ "' AND FIND_IN_SET('" +add+ "', friends);";
         string checkk_friendship_query = "SELECT * FROM FRIENDS WHERE name='" +add+ "' AND FIND_IN_SET('" +from+ "', friends);";
 
