@@ -14,6 +14,9 @@
 #include"mysql.hpp"
 #include"class.hpp"
 #include"readnwriten.hpp"
+// ANSI转义码
+#define ANSI_COLOR_GREEN  "\033[32m"
+#define ANSI_COLOR_RESET  "\033[0m"
 
 vector<bool> server::sock_arr(10000,false);
 unordered_map<string,int> server::name_sock_map;//名字和套接字描述符
@@ -678,6 +681,81 @@ if (result != 0) {
             string message = "No friends found";
             send(conn, message.c_str(), message.length(), 0);
         }
+
+    }
+    else if(str.find("online")!=str.npos)
+    {
+        Friend friendobj = Friend::fromjson(str);
+        // 处理查询好友逻辑
+        cout << "收到查询好友请求" << endl;
+        string from=friendobj.logiin_name.substr(5);
+        string search="SELECT friends FROM FRIENDS WHERE name='" +from+ "';";
+        cout << "SQL语句:" << search << endl;
+        mysql_query(con, search.c_str());
+        auto result = mysql_store_result(con);
+        int numFriends = mysql_num_rows(result);
+        if (numFriends > 0) {
+        cout << "已查询到以下好友：" << endl;
+        string friendList;
+        for (int i = 0; i < numFriends; i++) {
+            auto row = mysql_fetch_row(result);
+            string friendName = row[0];
+            cout << friendName << endl;
+            friendList+=friendName+",";
+            string manager = row[0];
+            //存储分割后的子字符串
+            std::vector<std::string>substrings;
+            std::stringstream ss(manager);
+            std::string substring;
+            while(std::getline(ss,substring,','))
+            {
+                substrings.push_back(substring);
+            }
+            for(const auto&sub:substrings)
+            {
+                string sea="SELECT online_status FROM USER WHERE name='" +sub+ "';";
+                int result = mysql_query(con, sea.c_str());
+                if (result != 0) {
+                cout << "查询错误：" << mysql_error(con) << endl;
+                }
+                else
+                {
+                    MYSQL_RES* join_type_result = mysql_store_result(con);
+                    if (join_type_result != nullptr) {
+                    MYSQL_ROW row = mysql_fetch_row(join_type_result);
+                    if (row != nullptr) {
+                    string joinType = row[0]; 
+                    if(joinType=="online")
+                    {
+                        std::cout << ANSI_COLOR_GREEN << sub << ANSI_COLOR_RESET << std::endl; 
+                    }
+                      
+                    if(joinType=="offline")
+                    {
+                        std::cout << sub<< std::endl;
+                    }
+
+                    }
+                    }
+                    mysql_free_result(join_type_result);
+                }
+
+               
+
+            }
+            
+        }
+         // 将好友信息发送给客户端
+         send(conn, friendList.c_str(), friendList.length(), 0);
+        }
+        else{
+             cout << "未查询到好友" << endl;
+             // 发送未查询到好友的信息给客户端
+            string message = "No friends found";
+            send(conn, message.c_str(), message.length(), 0);
+        }
+         mysql_free_result(result);
+
 
     }
     //屏蔽
