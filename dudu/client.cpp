@@ -13,6 +13,9 @@ using namespace std;
 #include"client.h"
 #include"class.hpp"
 #include"readnwriten.hpp"
+// ANSI转义码
+#define ANSI_COLOR_GREEN  "\033[32m"
+#define ANSI_COLOR_RESET  "\033[0m"
 
 pthread_mutex_t client::m_mutex;
 
@@ -177,8 +180,9 @@ void client::Menu()
         cout<<"|              18:查看是否有人申请加入群聊     |\n";
         cout<<"|              19:踢人                       |\n";
         cout<<"|              20:发送文件                    |\n";
-        cout<<"|               21:查看好友历史消息记录          |\n";
+        cout<<"|              21:查看好友历史消息记录          |\n";
         cout<<"|              22:好友申请列表                 |\n";
+        cout<<"|              23:好友在线状态                 |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -424,6 +428,24 @@ void client::HandleClient(int conn)
             cout << "查询结果："<<reponse << endl;
             sleep(10);
         }
+        else if(choice==23)
+        {
+            Friend friendobj;
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            friendobj.nameadd="online";
+            string str = friendobj.tojson();
+            send(conn, str.c_str(), str.length(), 0);
+            cout << "已发送查询好友在线状态请求\n\n";
+            // 接收并打印查询结果
+            char buffer[1000];
+            memset(buffer,0,sizeof(buffer));
+            recv(sock,buffer,sizeof(buffer),0);//接受响应
+            //将接收到的数据缓冲区buffer转换为string类型的对象response
+            string reponse(buffer);
+            cout << "查询在线结果："<< endl;
+            std::cout <<reponse<< std::endl;
+        }
+
          else if(choice==6)
         {
         // 发送注销请求
