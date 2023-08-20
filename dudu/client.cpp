@@ -452,7 +452,7 @@ void client::HandleClient(int conn)
             cin>>blockedFriendName;
             //发送屏蔽好友请求到服务器
             Friend friendobj;
-            friendobj.nameblock="block:"+blockedFriendName;
+            friendobj.nameblock="blocck:"+blockedFriendName;
             friendobj.logiin_name="from:"+login_name.substr(5);
             string request=friendobj.tojson();
             send(conn,request.c_str(),request.length(),0);
