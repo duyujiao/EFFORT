@@ -25,6 +25,8 @@ unordered_map<int,set<int> > server::group_map;//记录群号和套接字描述�
 pthread_mutex_t server::name_sock_mutx;//互斥锁，锁住需要修改name_sock_map的临界区
 pthread_mutex_t server::group_mutx;//互斥锁，锁住需要修改group_map的临界区
 pthread_mutex_t server::from_mutex;//自旋锁，锁住修改from_to_map的临界区
+char* g_fileBuf;
+int g_fileSize;
 //构造函数
 server::server(int port,string ip):server_port(port),server_ip(ip){
     pthread_mutex_init(&name_sock_mutx, NULL); //创建互斥锁
@@ -169,7 +171,7 @@ void server::run()
     //定义sockaddr_in
     struct sockaddr_in server_sockaddr;
     server_sockaddr.sin_family = AF_INET;//TCP/IP协议族
-    server_sockaddr.sin_port = htons(8023);//端口号
+    server_sockaddr.sin_port = htons(8023);//端口号，把本地字节序转为网络字节序，大小端存储
     server_sockaddr.sin_addr.s_addr = inet_addr("127.0.0.1");//ip地址，127.0.0.1是环回地址，相当于本机ip
 
     //bind，成功返回0，出错返回-1
@@ -237,57 +239,125 @@ void server::run()
 //         }
 //     }
 // }
-void recvFile(int conn)
-{
-     // 接收文件名和文件大小
-    char buffer[1024];
-    int bytes_received = recv(conn, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received <= 0) {
-        std::cout << "接收文件失败" << std::endl;
-        return;
+//读取文件
+ bool readFile(const char* fileName)
+ {
+    FILE*read=fopen(fileName,"rb");
+    if(!read)
+    {
+        perror("文件打开失败：\n");
+        return false;
     }
-    buffer[bytes_received] = '\0';
+    //获取文件大小
+    fseek(read,0,SEEK_END);//将文件位置指针移动到最后
+    g_fileSize=ftell(read);//保存文件大小
+    fseek(read,0,SEEK_SET);//移动到开头
+    cout<<g_fileSize<<endl;
 
-    std::string file_info(buffer);
-    size_t comma_pos = file_info.find(',');
-    if (comma_pos == std::string::npos) {
-        std::cout << "无效的文件信息格式" << std::endl;
-        return;
+    //分配内存
+    //char* g_fileBuf;//保存文件数据
+    g_fileBuf = new char[g_fileSize]();
+    //把文件读到内存中来
+    fread(g_fileBuf,sizeof(char),g_fileSize,read);
+
+    //delete[] g_fileBuf;
+    
+    fclose(read);
+    return true;
+
+ }
+ bool saveFile(const char*fileName)
+ {
+    FILE*write=fopen(fileName,"wb");
+    if(!write)
+    {
+        perror("文件打开失败：\n");
+        return false;
     }
-    std::string filename = file_info.substr(0, comma_pos);
-    int file_size = std::stoi(file_info.substr(comma_pos + 1));
+    fwrite(g_fileBuf,sizeof(char),g_fileSize,write);
+    fclose(write);
+    return true;
+ }
+ bool sendFile(int conn,const char*fileName)
+ {
+    readFile(fileName);
+    send(conn,g_fileBuf,g_fileSize,0);
+    cout<<"发送成功"<<g_fileSize<<"Bytes"<<endl;
+    return true;
 
-    std::cout << "接收文件: " << filename <<  std::endl;
-    std::ofstream file(filename, std::ios::binary);
-    if (!file) {
-        std::cout << "创建文件失败" << filename << std::endl;
-        return;
+ }
+ bool recvFile(int conn,const char*fileName)
+ {
+    if(g_fileBuf==NULL)
+    {
+        g_fileBuf = new char[g_fileSize]();
     }
-
-    // 接收文件内容并写入文件
-    const int buffer_size = 1024;
-    char recv_buffer[buffer_size];
-    int total_bytes_received = 0;
-     while (total_bytes_received < file_size) {
-        int byte_received = recv(conn, recv_buffer, buffer_size, 0);
-
-        if (byte_received <= 0) {
-            std::cout << "接收数据失败" << std::endl;
-            //break;
-        }
-        file.write(recv_buffer, byte_received);
-        total_bytes_received += byte_received;
+    int ret=recv(conn,g_fileBuf,g_fileSize,0);
+    if(ret==0)
+    {
+        cout<<"客户端下线"<<endl;
     }
-
-    file.close();
-
-    if (total_bytes_received == file_size) {
-        std::cout << "文件接收成功: " << filename << std::endl;
-    } else {
-        std::cout << "文件接收失败:" << filename << std::endl;
+    else if(ret<0)
+    {
+        perror("recv");
     }
+    saveFile(fileName);
+    delete[] g_fileBuf;
+    return 0;
 
-}
+ }
+
+// void recvFile(int conn)
+// {
+//      // 接收文件名和文件大小
+//     char buffer[1024];
+//     int bytes_received = recv(conn, buffer, sizeof(buffer) - 1, 0);
+//     if (bytes_received <= 0) {
+//         std::cout << "接收文件失败" << std::endl;
+//         return;
+//     }
+//     buffer[bytes_received] = '\0';
+
+//     std::string file_info(buffer);
+//     size_t comma_pos = file_info.find(',');
+//     if (comma_pos == std::string::npos) {
+//         std::cout << "无效的文件信息格式" << std::endl;
+//         return;
+//     }
+    // std::string filename = file_info.substr(0, comma_pos);
+    // int file_size = std::stoi(file_info.substr(comma_pos + 1));
+
+    // std::cout << "接收文件: " << filename <<  std::endl;
+    // std::ofstream file(filename, std::ios::binary);
+    // if (!file) {
+    //     std::cout << "创建文件失败" << filename << std::endl;
+    //     return;
+    // }
+
+    // // 接收文件内容并写入文件
+    // const int buffer_size = 1024;
+    // char recv_buffer[buffer_size];
+    // int total_bytes_received = 0;
+    //  while (total_bytes_received < file_size) {
+    //     int byte_received = recv(conn, recv_buffer, buffer_size, 0);
+
+    //     if (byte_received <= 0) {
+    //         std::cout << "接收数据失败" << std::endl;
+    //         //break;
+    //     }
+    //     file.write(recv_buffer, byte_received);
+    //     total_bytes_received += byte_received;
+    // }
+
+    // file.close();
+
+    // if (total_bytes_received == file_size) {
+    //     std::cout << "文件接收成功: " << filename << std::endl;
+    // } else {
+    //     std::cout << "文件接收失败:" << filename << std::endl;
+    //}
+
+//}
 
 void server::RecvMsg(int conn)
 {
@@ -487,12 +557,114 @@ if (result != 0) {
         mysql_free_result(result);
     }
 
-    else if(str.find("file")!=str.npos)
+    else if(str.find("file:")!=str.npos)
     {
+        // Friend friendobj = Friend::fromjson(str);
+        // string file=friendobj.target_name.substr(4);
+        // //sendFile(conn,"../../文档/typora/111.md");
+        // //recvFile(conn);
         Friend friendobj = Friend::fromjson(str);
-        string file=friendobj.target_name.substr(4);
-        recvFile(conn);
+        string target=friendobj.target_name.substr(5);
+        string from=friendobj.logiin_name.substr(5);
+         target_name=target;
+         cout<<target<<endl;
+        //找不到这个目标
+        if(name_sock_map.find(target)==name_sock_map.end())
+        {
 
+            cout<<"源用户为"<<login_name<<",目标用户"<<target_name<<"仍未登录，无法发起私聊\n";
+       
+        }
+        //找到了目标
+        else
+        {
+             cout<<"源用户"<<login_name<<"向目标用户"<<target_name<<"发起的私聊即将建立";
+            cout<<",目标用户的套接字描述符为"<<name_sock_map[target]<<endl;
+            target_conn=name_sock_map[target];
+        
+            // string mess="你收到"+login_name+"私聊消息";
+            // send(target_conn, mess.c_str(), mess.length(), 0);
+
+
+        }
+
+
+        if(target_conn==-1)
+        {
+            cout<<"找不到目标用户"<<target_name<<"的套接字,将尝试重新寻找目标用户的套接字\n";
+        }
+        if(name_sock_map.find(target_name)!=name_sock_map.end())
+        {
+                target_conn=name_sock_map[target_name];
+                cout<<"重新查找目标用户套接字成功\n";
+
+                string from_user=login_name;
+                string to_user=target_name;
+                //检查好友关系
+                string check_friendship_query="SELECT * FROM FRIENDS WHERE name='" +from_user+ "'AND FIND_IN_SET('" +to_user+ "',friends);";
+                int result=mysql_query(con,check_friendship_query.c_str());
+                if (result != 0) 
+                {
+                cout << "查询错误: " << mysql_error(con) << endl;
+                 // 处理查询错误
+                } else
+                {
+                MYSQL_RES* query_result = mysql_store_result(con);
+                int num_rows = mysql_num_rows(query_result);
+                if (num_rows == 0) {
+                cout << "用户 " << from_user << " 和 " << to_user << " 不是好友，禁止私聊" << endl;
+                // 处理非好友关系的情况，禁止私聊逻辑
+                } else {
+                    //检查是否屏蔽了好友发送的消息
+                    string check_friendship_queryy="SELECT * FROM BLOCK WHERE name='" +to_user+ "'AND FIND_IN_SET('" +from_user+ "',blockfriends);";
+                    int result=mysql_query(con,check_friendship_queryy.c_str());
+                if (result != 0) 
+                {
+                cout << "查询错误: " << mysql_error(con) << endl;
+                 // 处理查询错误
+                } 
+                else{
+                    MYSQL_RES* query_result = mysql_store_result(con);
+                int num_rows = mysql_num_rows(query_result);
+                if (num_rows == 0)
+                {
+          
+                // string recv_str(str);
+                // string send_str = recv_str.substr(8);
+                // cout << "用户 " << login_name << " 向 " << target_name << " 发送 " << send_str << endl;
+                // send_str = "[" + login_name + "]: " + send_str;
+              //../../文档/typora/111.md
+                // send(target_conn, send_str.c_str(), send_str.length(), 0);
+                 recvFile(conn,"1.md");
+                 cout << "用户 " << login_name << " 向 " << target_name << " 发送文件 " << endl;
+                //  if(str.find("ww")!=str.npos)
+                // sendFile(target_conn,"../../文档/typora/111.md");
+                 // 处理好友关系的情况，执行私聊逻辑
+                    
+                }
+                    else
+                    {
+                        cout << "用户 " << to_user << " 屏蔽了用户 " << from_user << " 的消息，不转发" << endl;
+                    }
+                }
+                mysql_free_result(query_result); // 释放结果集
+                }
+        }
+        }
+        else
+        {
+                cout<<"查找仍然失败，转发失败！\n";
+        }
+       
+    
+
+    }
+    else if(str.find("wwww")!=str.npos)
+    {
+        // string emo=str.substr(4);
+        // target_conn=name_sock_map[emo];
+        //sendFile(target_conn,"1.md");
+        sendFile(conn,"../../文档/typora/111.md");
     }
     else if (str == "logout") 
     {
