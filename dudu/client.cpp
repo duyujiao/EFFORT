@@ -16,6 +16,8 @@ using namespace std;
 // ANSI转义码
 #define ANSI_COLOR_GREEN  "\033[32m"
 #define ANSI_COLOR_RESET  "\033[0m"
+int g_fileSize;
+char* g_fileBuf;
 
 pthread_mutex_t client::m_mutex;
 
@@ -48,6 +50,19 @@ void client::run(){
     
     HandleClient(sock);
 
+    // char recvBuf[1024]="";
+    // int ret=recv(sock,recvBuf,1024,0);
+    // if(ret==0)
+    // {
+    //     cout<<"客户端下线"<<endl;
+    // }
+    // else if(ret<0)
+    // {
+    //     perror("recv");
+    // }
+
+
+
     //创建发送线程和接收线程
     thread send_t(SendMsg,sock),recv_t(RecvMsg,sock);
     send_t.join();
@@ -56,6 +71,78 @@ void client::run(){
     cout<<"接收线程已结束\n";
     return;
 }
+//读取文件
+ bool readFile(const char* fileName)
+ {
+    FILE*read=fopen(fileName,"rb");
+    if(!read)
+    {
+        perror("文件打开失败：\n");
+        return false;
+    }
+    //获取文件大小
+    fseek(read,0,SEEK_END);//将文件位置指针移动到最后
+    g_fileSize=ftell(read);//保存文件大小
+    fseek(read,0,SEEK_SET);//移动到开头
+    cout<<g_fileSize<<endl;
+
+    //分配内存
+    //char* g_fileBuf;//保存文件数据
+    g_fileBuf = new char[g_fileSize]();
+    //把文件读到内存中来
+    fread(g_fileBuf,sizeof(char),g_fileSize,read);
+
+    delete[] g_fileBuf;
+    
+    fclose(read);
+    return true;
+
+ }
+ bool saveFile(const char*fileName)
+ {
+    FILE*write=fopen(fileName,"wb");
+    if(!write)
+    {
+        perror("文件打开失败：\n");
+        return false;
+    }
+    fwrite(g_fileBuf,sizeof(char),g_fileSize,write);
+    fclose(write);
+    return true;
+ }
+ bool sendFile(int conn,const char*fileName)
+ {
+    readFile(fileName);
+
+     send(conn,g_fileBuf,g_fileSize,0);
+    cout<<"发送成功"<<g_fileSize<<"Bytes"<<endl;
+    return true;
+
+ }
+ bool recvFile(int conn,const char*fileName)
+ {
+    if(g_fileBuf==NULL)
+    {
+        g_fileBuf = new char[g_fileSize]();
+    }
+    int ret=recv(conn,g_fileBuf,g_fileSize,0);
+    if(ret==0)
+    {
+        cout<<"服务器发完"<<endl;
+    }
+    else if(ret<0)
+    {
+        perror("recv");
+    }
+    saveFile(fileName);
+    //delete[] g_fileBuf;
+    return 0;
+
+ }
+
+
+
+
 void client::SendMsg(int conn){
     char sendbuf[100];
     while (1)
@@ -113,46 +200,6 @@ void recvv(int conn){
  cout<<buffer<<endl;
     }
 }
-
-bool CheckDuplicateFilename(const std::string& filename)
-{
-    //获取文件路径
-    std::filesystem::path filePath(filename);
-    //检查文件是否存在
-    return std::filesystem::exists(filePath);
-
-}
-void sendFile(const std::string& filename, int conn) {
-    // 打开文件
-    std::ifstream file(filename, std::ios::binary | std::ios::ate);
-    if (!file) {
-        std::cout << "打开文件失败: " << filename << std::endl;
-        return;
-    }
-
-    // 获取文件大小
-    std::streampos fileSize = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    // 发送文件名和文件大小信息给服务端
-    std::string fileInfo = filename + "," + std::to_string(fileSize);
-    send(conn, fileInfo.c_str(), fileInfo.size(), 0);
-
-    // 发送文件内容
-    const int bufferSize = 1024;
-    char sendBuffer[bufferSize];
-    while (!file.eof()) {
-        file.read(sendBuffer, bufferSize);
-        int bytesRead = file.gcount();
-        send(conn, sendBuffer, bytesRead, 0);
-    }
-
-    file.close();
-
-    std::cout << "文件发送成功: " << filename << std::endl;
-}
-
-
 
 void client::Menu()
 {
@@ -334,14 +381,28 @@ void client::HandleClient(int conn)
 
         else if(choice==20)
         {
-            string filename;
-            cout << "请输入要发送的文件名: ";
-            cin >> filename;
+            cout<<"请输入要发送文件对方的用户名：";
+            string target_name,content;
+            cin>>target_name;
             Friend friendobj;
-            friendobj.target_name="file"+filename;
-            string str2=friendobj.tojson();
-            send(conn,str2.c_str(),str2.length(),0);
-            sendFile(filename,sock);
+            friendobj.target_name="file:"+target_name;
+            friendobj.logiin_name="from:"+login_name.substr(5);
+            string login=login_name.substr(5);
+            string sendstr=friendobj.tojson();
+            send(sock,sendstr.c_str(),sendstr.length(),0);
+            sendFile(conn,"../../文档/typora/111.md");
+           // recvFile(conn,"1.md");
+        }
+        else if(choice==24)
+        {
+            
+            string targetname;
+            cout<<"请输入要查看接收谁的文件"<<endl;
+            cin>>targetname;
+            string str="wwww"+targetname;
+            send(conn,str.c_str(),str.length(),0);
+            recvFile(sock,"1.md");
+            cout<<"接收文件成功"<<endl;
         }
 
          else if(choice==3)
