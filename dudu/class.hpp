@@ -106,9 +106,9 @@ class Friend
         {
             f.nameadd=f.nameadd.substr(6);
         }
-        if(f.nameblock.find("block:")==0)
+        if(f.nameblock.find("blocck:")==0)
         {
-            f.nameblock=f.nameblock.substr(6);
+            f.nameblock=f.nameblock.substr(7);
         }
         if(f.nameblock.find("unlock:")==0)
         {
@@ -123,5 +123,81 @@ class Friend
 class Group
 {
     public:
-    int num;
+    string group_num;
+    string logiin_name;
+    string group_type;
+    string group_admin;
+    string group_kick;
+    string tojson() const
+    {
+        Value f;
+        f["group_num"]=group_num;
+        f["logiin_name"]=logiin_name;
+        f["group_type"]=group_type;
+        f["group_admin"]=group_admin;
+        f["group_kick"]=group_kick;
+
+        StreamWriterBuilder writerBuilder;
+        string jsonStr=writeString(writerBuilder,f);
+        return jsonStr;
+    }
+    static Group fromjson(const string& jsonStr)
+    {
+        Group f;
+
+        CharReaderBuilder readerBuilder;
+
+        Value root;
+        //>>运算符将输入流中的数据解析并存储到root对象中，从而实现了字符串到 JSON 对象的反序列化
+        istringstream(jsonStr)>>root;
+
+        f.group_num=root["group_num"].asString();
+        f.logiin_name=root["logiin_name"].asString();
+        f.group_type=root["group_type"].asString();
+        f.group_admin=root["group_admin"].asString();
+        f.group_kick=root["group_kick"].asString();
+
+        if(f.group_num.find("create:")==0)
+        {
+            f.group_num=f.group_num.substr(7);
+        }
+        if(f.group_num.find("dismiss:")==0)
+        {
+            f.group_num=f.group_num.substr(8);
+        }
+         if(f.group_num.find("join:")==0)
+        {
+            f.group_num=f.group_num.substr(5);
+        }
+         if(f.group_num.find("quit:")==0)
+        {
+            f.group_num=f.group_num.substr(5);
+        }
+        if(f.group_num.find("gmem:")==0)
+        {
+            f.group_num=f.group_num.substr(5);
+        }
+        if(f.group_admin.find("increase:")==0)
+        {
+            f.group_admin=f.group_admin.substr(9);
+        }
+        if(f.group_admin.find("decrease:")==0)
+        {
+            f.group_admin=f.group_admin.substr(9);
+        }
+        if(f.group_num.find("view")==0)
+        {
+            f.group_num=f.group_num.substr(4);
+        }
+        if(f.group_kick.find("kicck:")==0)
+        {
+            f.group_kick=f.group_kick.substr(6);
+        }
+        if(f.group_num.find("approve:")==0)
+        {
+            f.group_num=f.group_num.substr(8);
+        }
+        return f;
+    }
+
 };

@@ -22,6 +22,22 @@
 #include <cstdlib>
 #include <csignal>  // 包含信号处理相关的头文件
 #include <set>//将处于同一群聊的套接字描述符放入同一个 set 中
+#include<sys/epoll.h>
+#include<errno.h>
+#include<filesystem>
+#include <fstream>
+#include<mutex>
+
+// #include<boost/bind.hpp>
+// #include<boost/asio.hpp>
+#include<errno.h>
+
+
+// #include<boost/bind.hpp>
+// #include<boost/asio.hpp>
+// #include <hiredis/hiredis.h>
+#include <fstream>  
 using namespace std;
+
 
 #endif

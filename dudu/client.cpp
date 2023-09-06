@@ -50,25 +50,15 @@ void client::run(){
     
     HandleClient(sock);
 
-    // char recvBuf[1024]="";
-    // int ret=recv(sock,recvBuf,1024,0);
-    // if(ret==0)
-    // {
-    //     cout<<"客户端下线"<<endl;
-    // }
-    // else if(ret<0)
-    // {
-    //     perror("recv");
-    // }
 
 
 
-    //创建发送线程和接收线程
-    thread send_t(SendMsg,sock),recv_t(RecvMsg,sock);
-    send_t.join();
-    cout<<"发送线程已结束\n";
-    recv_t.join();
-    cout<<"接收线程已结束\n";
+    // //创建发送线程和接收线程
+    // thread send_t(SendMsg,sock),recv_t(RecvMsg,sock);
+    // send_t.join();
+    // cout<<"发送线程已结束\n";
+    // recv_t.join();
+    // cout<<"接收线程已结束\n";
     return;
 }
 //读取文件
@@ -208,7 +198,7 @@ void client::Menu()
         cout<<"|          请选择你要的选项：               |\n";
         cout<<"|              0:退出                       |\n";
         cout<<"|              1:发起单独聊天                |\n";
-        cout<<"|              2:发起群聊                   |\n";
+        cout<<"|              2:查看好友历史消息记录         |\n";
         cout<<"|              3:请求添加好友                   |\n";
         cout<<"|              4:删除好友                   |\n";
         cout<<"|              5:查询好友                    |\n";
@@ -227,9 +217,10 @@ void client::Menu()
         cout<<"|              18:查看是否有人申请加入群聊     |\n";
         cout<<"|              19:踢人                       |\n";
         cout<<"|              20:发送文件                    |\n";
-        cout<<"|              21:查看好友历史消息记录          |\n";
+        cout<<"|              21:发起群聊                    |\n";
         cout<<"|              22:好友申请列表                 |\n";
         cout<<"|              23:好友在线状态                 |\n";
+        cout<<"|              24:接收文件                    |\n";
         cout<<"|                                            |\n";
         cout<<" ------------------------------------------- \n\n";
 }
@@ -433,6 +424,10 @@ void client::HandleClient(int conn)
             recv(sock, buffer, sizeof(buffer), 0);
             string response(buffer);
             cout << "查询结果：" << response << endl;
+            if(response.empty())
+            {
+                cout<<"没有要添加的好友"<<endl;
+            }
             string addname;
             cout<<"请输入要添加的好友的名字"<<endl;
             cin>>addname;
@@ -556,7 +551,6 @@ void client::HandleClient(int conn)
             string request=friendobj.tojson();
             send(conn,request.c_str(),request.length(),0);
             cout<<"已发送屏蔽好友的请求\n\n";
-            break;
         }
         //群聊
         else if(choice==9)
@@ -594,7 +588,6 @@ void client::HandleClient(int conn)
 
             t1.join();
             t2.join();
-            break;
 
         }
         else if(choice==10)
@@ -710,7 +703,7 @@ void client::HandleClient(int conn)
             recv(sock, buffer, sizeof(buffer), 0);
             string response(buffer);
             cout << "查询结果：" << response << endl;
-            sleep(10);
+           
 
         }
         else if(choice==18)
@@ -815,9 +808,9 @@ void client::HandleClient(int conn)
             recv(sock, buffer, sizeof(buffer), 0);
             string response(buffer);
             cout << "查询结果：" << response << endl;
-            sleep(10);
+           
         }
-        else if(choice==21)
+        else if(choice==2)
         {
             
             MYSQL *co=mysql_init(NULL);

@@ -14,9 +14,11 @@
 #include"mysql.hpp"
 #include"class.hpp"
 #include"readnwriten.hpp"
+
 // ANSI转义码
 #define ANSI_COLOR_GREEN  "\033[32m"
 #define ANSI_COLOR_RESET  "\033[0m"
+#define EPOLL 1024
 
 vector<bool> server::sock_arr(10000,false);
 unordered_map<string,int> server::name_sock_map;//名字和套接字描述符
@@ -81,7 +83,7 @@ void SetNonBlocking(int sockfd) {
 //服务器开始服务
 void server::run()
  {
-    // //listen的backlog大小
+    //listen的backlog大小
     // int LISTENQ=200;
     // int i,maxi,listenfd,connfd,sockfd,epfd,nfds;
     // ssize_t n;
@@ -156,7 +158,7 @@ void server::run()
     //             cout<<"接收到读事件"<<endl;
 
     //             string recv_str;
-    //             boost::asio::post(boost::bind(RecvMsg,epfd,sockfd)); //加入任务队列，处理事件
+    //             boost::asio::post(boost::bind(RecvMsg,sockfd)); //加入任务队列，处理事件
     //         }
     //     }
     // }
@@ -171,8 +173,8 @@ void server::run()
     //定义sockaddr_in
     struct sockaddr_in server_sockaddr;
     server_sockaddr.sin_family = AF_INET;//TCP/IP协议族
-    server_sockaddr.sin_port = htons(8023);//端口号，把本地字节序转为网络字节序，大小端存储
-    server_sockaddr.sin_addr.s_addr = inet_addr("127.0.0.1");//ip地址，127.0.0.1是环回地址，相当于本机ip
+    server_sockaddr.sin_port = htons(8001);//端口号，把本地字节序转为网络字节序，大小端存储
+    server_sockaddr.sin_addr.s_addr = inet_addr("10.30.0.147");//ip地址，127.0.0.1是环回地址，相当于本机ip
 
     //bind，成功返回0，出错返回-1
     if(bind(server_sockfd,(struct sockaddr *)&server_sockaddr,sizeof(server_sockaddr))==-1)
@@ -192,6 +194,14 @@ void server::run()
     struct sockaddr_in client_addr;
     socklen_t length = sizeof(client_addr);
 
+    
+    int ret;
+    int efd=epoll_create(EPOLL);
+    struct epoll_event temp,ep[EPOLL];
+    temp.data.fd=server_sockfd;
+    temp.events=EPOLLIN;
+    epoll_ctl(efd,EPOLL_CTL_ADD,server_sockfd,&temp);
+  
      //不断取出新连接并创建子线程为其服务
     while(1){
         int conn = accept(server_sockfd, (struct sockaddr*)&client_addr, &length);
@@ -208,37 +218,8 @@ void server::run()
     }
 }
 
-//子线程工作的静态函数
-//注意，前面不用加static，否则会编译报错
-// void server::RecvMsg(int conn){
-//     //接收缓冲区
-//     char buffer[1000];
-//     //不断接收数据
-//     while(1)
-//     {
-//         memset(buffer,0,sizeof(buffer));
-//         int len = recv(conn, buffer, sizeof(buffer),0);
-//         //客户端发送exit或者异常结束时，退出
-//         if(strcmp(buffer,"exit")==0 || len<=0){
-//             close(conn);
-//             sock_arr[conn]=false;
-//             break;
-//         }
-//         std::cout<<"收到套接字描述符为"<<conn<<"发来的信息："<<buffer<<endl;
-                                  
-//          string str(buffer);
-//         HandleRequest(conn,str);
-//         //回复客户端
-//         string ans="收到";
-//         int ret = send(conn,ans.c_str(),ans.length(),0);
-//         //服务器收到exit或者异常关闭套接字描述符
-//         if(ret<=0){
-//             close(conn);
-//             sock_arr[conn]=false;
-//             break;
-//         }
-//     }
-// }
+
+
 //读取文件
  bool readFile(const char* fileName)
  {
@@ -307,57 +288,8 @@ void server::run()
 
  }
 
-// void recvFile(int conn)
-// {
-//      // 接收文件名和文件大小
-//     char buffer[1024];
-//     int bytes_received = recv(conn, buffer, sizeof(buffer) - 1, 0);
-//     if (bytes_received <= 0) {
-//         std::cout << "接收文件失败" << std::endl;
-//         return;
-//     }
-//     buffer[bytes_received] = '\0';
 
-//     std::string file_info(buffer);
-//     size_t comma_pos = file_info.find(',');
-//     if (comma_pos == std::string::npos) {
-//         std::cout << "无效的文件信息格式" << std::endl;
-//         return;
-//     }
-    // std::string filename = file_info.substr(0, comma_pos);
-    // int file_size = std::stoi(file_info.substr(comma_pos + 1));
 
-    // std::cout << "接收文件: " << filename <<  std::endl;
-    // std::ofstream file(filename, std::ios::binary);
-    // if (!file) {
-    //     std::cout << "创建文件失败" << filename << std::endl;
-    //     return;
-    // }
-
-    // // 接收文件内容并写入文件
-    // const int buffer_size = 1024;
-    // char recv_buffer[buffer_size];
-    // int total_bytes_received = 0;
-    //  while (total_bytes_received < file_size) {
-    //     int byte_received = recv(conn, recv_buffer, buffer_size, 0);
-
-    //     if (byte_received <= 0) {
-    //         std::cout << "接收数据失败" << std::endl;
-    //         //break;
-    //     }
-    //     file.write(recv_buffer, byte_received);
-    //     total_bytes_received += byte_received;
-    // }
-
-    // file.close();
-
-    // if (total_bytes_received == file_size) {
-    //     std::cout << "文件接收成功: " << filename << std::endl;
-    // } else {
-    //     std::cout << "文件接收失败:" << filename << std::endl;
-    //}
-
-//}
 
 void server::RecvMsg(int conn)
 {
@@ -1649,59 +1581,4 @@ if (result != 0) {
 
 
 
-// int main()
-// {
-//     //定义sockfd
-//     int server_sockfd=socket(AF_INET,SOCK_STREAM,0);
 
-//     //定义sockaddr_in
-//     struct sockaddr_in server_sockaddr;
-//     server_sockaddr.sin_family=AF_INET;//TCP/IP协议族
-//     server_sockaddr.sin_port=htons(8023);//端口号
-//     server_sockaddr.sin_addr.s_addr=inet_addr("127.0.0.1");//ip地址
-
-//     //bind,成功返回0,出错返回-1
-//     if(bind(server_sockfd,(struct sockaddr *)&server_sockaddr,sizeof(server_sockaddr))==-1)
-//     {
-//         perror("bind");//输出错误原因
-//         exit(1);//结束程序
-//     }
-
-//      //listen，成功返回0，出错返回-1
-//     if(listen(server_sockfd,20) == -1)
-//     {
-//         perror("listen");//输出错误原因
-//         exit(1);//结束程序
-//     }
-
-//     //客户端套接字
-//     struct sockaddr_in client_addr;
-//     socklen_t length = sizeof(client_addr);
-
-//     //成功返回非负描述字，出错返回-1
-//     int conn = accept(server_sockfd, (struct sockaddr*)&client_addr, &length);
-//     if(conn<0)
-//     {
-//         perror("connect");//输出错误原因
-//         exit(1);//结束程序
-//     }
-//     cout<<"客户端成功连接"<<endl;
-
-//     //接收缓冲区
-//     char buffer[1000];
-
-//      //不断接收数据
-//     while(1)
-//     {
-//         memset(buffer,0,sizeof(buffer));
-//         int len = recv(conn, buffer, sizeof(buffer),0);
-//         //客户端发送exit或者异常结束时，退出
-//         if(strcmp(buffer,"exit")==0 || len<=0)
-//             break;
-//         cout<<"收到客户端信息："<<buffer<<endl;
-//     }
-//     close(conn);
-//     close(server_sockfd);
-//     return 0;
-
-// }
