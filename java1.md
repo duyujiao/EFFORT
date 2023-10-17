@@ -2439,6 +2439,197 @@ Lambda表达式的省略写法(进一步简化Lambda表达式的写法)
 使用场景：如果某个Lambda表达式里只是调用一个静态方法，并且前后参数的形式一致，就可以使用静态方法引用   
 实例方法引用：对象名::实例方法   
 使用场景：如果某个Lambda表达式里只是调用一个实例方法，并且前后参数的形式一致，就可以使用实例方法引用     
+特定类型的方法引用：类型::方法   
+使用场景：如果某个Lambda表达式里只是调用一个实例方法，并且前面参数列表中的第一个参数是作为方法的主调，后面的所有参数是作为该实例方法的入参的，那此时就可以使用特点类型的方法引用    
+构造器引用：类名::new    
+使用场景：如果某个Lamdba表达式只是在创建对象，并且前后参数情况一致，就可以使用构造器引用   
+# 正则表达式  
+正则表达式就是由一些特定的字符组成，代表的是一个规则   
+作用一：用来校验数据格式是否合法，比如校验用户输入的电话号码是否格式合法，校验用户输入的邮箱格式是否合法，校验用户输入的qq号码是否合法     
+作用二：在一段文本中查找满足要求的内容   
+```java
+import java.text.ParseException;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+//目标: 体验一下使用正则表达式来校验数据格式的合法性
+//需求:校验QQ号码是否正确，要求全部是数字，长度是《6-20)之间，不能以0开头
+
+public class Test {
+   public static void main(String[] args) throws ParseException {
+      System.out.println(checkQQ(null));//false
+      System.out.println(checkQQ("2335445667"));//true
+      System.out.println(checkQQ("2345aaa3455"));//false
+      System.out.println("-------------------");
+      System.out.println(checkQQ1(null));//false
+      System.out.println(checkQQ1("2335445667"));//true
+      System.out.println(checkQQ1("2345aaa3455"));//false
+
+
+   }
+   public static boolean checkQQ1(String qq)
+   {
+      return qq!=null&&qq.matches("[1-9]\\d{5,19}");
+   }
+   public static boolean checkQQ(String qq)
+   {
+      //1.判断qq号码是否为null等
+      if(qq==null||qq.startsWith("0")||qq.length()<6||qq.length()>20)
+         return false;
+      //2.qq至少是不是null,不是以0开头，阿玛尼组6~20之间的长度
+      //判断qq号码中是否都是数字
+      //qq=2514ghd234
+      for (int i = 0; i < qq.length(); i++) {
+         //根据索引提取当前位置处的字符
+         char ch=qq.charAt(i);
+         if(ch<'0'||ch>'9')
+            return false;
+      }
+      return true;
+   }
+
+
+   }
+```
+String 提供了一个匹配正则表达式的方法   
+public boolean matches(String regex);判断字符串是否匹配正则表达式，匹配返回true,不匹配返回false   
+正则表达式的书写规则    
+字符类（只匹配单个字符）    
+[abc] 只能是a，b，或c    
+[^abc] 除了a，b，c之外的任何字符     
+[a-zA-z] a到z A到Z，包括 (范围)     
+[a-d[m-p]] a到d，或m到p        
+[a-z&&[def]] d，e，或f(交集)      
+[a-z&&[^bc]]  a到z，除了b和c (等同于[ad-z])        
+[a-z&&[^m-p]] :a到z，除了m到p(等同于[a-lq-z])    
+预定义字符（只匹配单个字符）   
+. 任何字符   
+\d 一个数字[0-9]     
+\D 非数字: [^0-9]      
+\s 一个空白字符:      
+\S 非空白字符: [^\s]     
+\w [a-zA-Z_0-9]          
+\W [^\w]一个非单词字符       
+数量词：   
+X? X,一次或0次     
+X* X，零次或多次   
+X+ X，一次或多次    
+X {n}  X,正好n次     
+X {n, } X,至少n次    
+X {n,m} X，至少n但不超过m次      
+## 应用案例
+```java
+import java.text.ParseException;
+import java.util.Scanner;
+//检验用户输入的电话，邮箱，时间是否合法
+
+public class Test {
+   public static void main(String[] args) {
+   checkPhone();
+
+
+   }
+   public static void checkPhone() {
+      while (true) {
+         System.out.println("请输入您的电话号码（手机或座机）：");
+         Scanner sc = new Scanner(System.in);
+         String phone = sc.nextLine();
+         //18629687099 010-4324242424 0102233434
+         if (phone.matches("(1[3-9]\\d{9})|(0\\d{2,7}-?[1-9]\\d{4,19})")) {
+            System.out.println("您输入的号码格式正确");
+            break;
+         } else {
+            System.out.println("您输入的号码格式不正确~请重新输入");
+         }
+      }
+   }
+      public static void checkEmail()
+      {
+         while (true) {
+            System.out.println("请输入您的邮箱：");
+            Scanner sc=new Scanner(System.in);
+            String email=sc.nextLine();
+            //dlei0009@163.com
+            //26354876@qq.com
+            //itheima@itcast.com
+            if(email.matches("\\w{2,}@\\w{2,20}(\\.\\w{2,10}){1,2}"))
+            {
+               System.out.println("您输入的邮箱格式正确");
+               break;
+            }
+            else{
+               System.out.println("您输入的号码邮箱不正确~请重新输入");
+            }
+         }
+   }
+
+
+
+
+   }
+   ```
+   爬取信息  
+```java
+import java.text.ParseException;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+//检验用户输入的电话，邮箱，时间是否合法
+
+public class Test {
+   public static void main(String[] args) {
+method1();
+
+
+   }
+   public static void method1()
+   {
+      String data="来黑马程序员学习Java.\n" +
+              "电话: 18666688888，18699997777\n" +
+              "或者联系邮箱: boniu@itcast.cn\n" +
+              "座机电话: 01036517895，010-98951256\n" +
+              "邮箱: bozai@itcast.cn.\n" +
+              "邮箱: dlei0009@163.com.\n" +
+              "热线电话: 400-618-9090 ，400-618-4000，4006184000，4006189090";
+      //1.定义爬取规则
+      String regex="(1[3-9]\\d{9})|(0\\d{2,7}-?[1-9]\\d{4,19})|(\\w{2,}@\\w{2,20}(\\.\\w{2,10}){1,2})"+"|(400-?\\d{3,7}-?\\d{3,7})";
+      //2.把正则表达式封装成一个Pattern对象
+      Pattern pattern=Pattern.compile(regex);
+      //3.通过pattern对象去获取查找内容的匹配器对象
+      Matcher matcher=pattern.matcher(data);
+      //4.定义一个循环开始爬取信息
+      while(matcher.find())
+      {
+         String rs=matcher.group();//获取到了找到的内容
+         System.out.println(rs);//18666688888
+//         18699997777
+//         boniu@itcast.cn
+//         01036517895
+//         010-98951256
+//         bozai@itcast.cn
+//      dlei0009@163.com
+//         400-618-9090
+//         400-618-4000
+//         4006184000
+//         4006189090
+      }
+   }
+
+
+
+
+   }
+
+```
+正则表达式用于搜索替换，分割内容，需要结合String提供的如下方法完成：   
+方法名      
+public String replaceAll(String regex ，String newStr)           
+public String[] split(String regex)         
+说明       
+按照正则表达式匹配的内容进行替换    
+按照正则表达式匹配的内容进行分割字符串，反回一个字符串数组。                      
+
+
+
  
 
 
