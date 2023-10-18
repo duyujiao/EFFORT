@@ -2627,6 +2627,106 @@ public String[] split(String regex)
 说明       
 按照正则表达式匹配的内容进行替换    
 按照正则表达式匹配的内容进行分割字符串，反回一个字符串数组。                      
+# 异常
+异常就是代表程序出现的问题   
+Error:代表的系统级别错误(属于严重问题)，也就是说系统一旦出现问题，sun公司会把这些问题封装成Error对象给出来说白了，Error是给sun公司自己用的，不是给我们程序员用的，因此我们开发人员不用管它。          
+Exception:叫异常，它代表的才是我们程序可能出现的问题，所以，我们程序员通常会用Exception以及它的孩子来封装程序出现的问题        
+·运行时异常:RuntimeException及其子类，编译阶段不会出现错误提醒，运行时出现的异常(如: 数组索引越界异常)     
+·编译时异常:编译阶段就会出现错误提醒的。(如:日期解析异常)       
+```java
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+
+public class Test {
+   public static void main(String[] args) throws ParseException {
+      //parse会报错，想不报错可以先检查代码有没有问题，一旦没有问题，把整个代码全部选中，ctrl+alt+t键，选择这个地方的try catch;
+      //try catch就是把程序可能出现的异常抓起来
+      //第一种方法
+//      try {
+//         SimpleDateFormat sdf=new SimpleDateFormat("yyy-MM-dd HH:mm:ss");
+//         Date d=sdf.parse("2028-11-11 10:24");
+//         System.out.println(d);
+//      } catch (ParseException e) {
+//         throw new RuntimeException(e);
+//      }
+      //第二种方法
+      //把解析异常抛出去
+      SimpleDateFormat sdf=new SimpleDateFormat("yyy-MM-dd HH:mm:ss");
+      Date d=sdf.parse("2028-11-11 10:24");
+      System.out.println(d);
+
+
+   }
+
+}
+```
+## 自定义异常
+Java无法为这个世界上全部的问题都提供异常类来代表，如果企业自己的某种问题，想通过异常来表示以便用异常来管理该问题，那就需要自己来定义异常类了。
+自定义运行时异常：   
+1.定义一个异常类继承RuntimeException.  
+2.重写构造器     
+3.通过throw new异常类（xxx）来创建异常对象并抛出，编译阶段不报错，提醒不强烈，运行时才可能出现     
+自定义编译时异常：
+1.定义一个异常类继承Exception.  
+2.重写构造器     
+3.通过throw new异常类（xxx）来创建异常对象并抛出，编译阶段就报错，提醒更加强烈       
+```java
+//Test.java
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+
+public class Test {
+   public static void main(String[] args) throws ParseException {
+       try {
+           saveAge(223);
+           System.out.println("底层执行成功的！");
+       } catch (Exception e) {
+           e.printStackTrace();
+           System.out.println("底层出现了bug!");
+       }
+
+
+   }
+   public static void saveAge(int age){
+       if(age>0&&age<150){
+           System.out.println("年龄成功保存："+age);
+       }else{
+           //用一个异常对象封装这个问题
+           //throw抛出去这个异常对象
+           throw new People("age is illegal,your age is "+age);
+       }
+   }
+
+}
+//People.java但这个名字其实时一个异常对象
+//必须让这个类继承RuntimeException,才能称为一个运行时异常
+public class People extends RuntimeException {
+    public People() {
+        super();
+    }
+
+    public People(String message) {
+        super(message);
+    }
+}
+
+```
+# 集合框架
+## Collection
+![Alt text](image-3.png)
+Collection集合特点    
+List系列集合:添加的元素是有序、可重复、有索引                
+·ArrayList、LinekdList: 有序、可重复、有索引。         
+Set系列集合:添加的元素是无序、不重复、无索引            
+·HashSet: 无序、不重复、无索引;    
+·LinkedHashSet: 有序、不重复、无索引。         
+·TreeSet: 按照大小默认升序排序、不重复、无索引。        
+
+
 
 
 
