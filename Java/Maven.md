@@ -126,3 +126,154 @@ Maven 是一个强大的构建工具，它提供一种标准化的项目结构�
 - src/main/webapp/index.html：Web 应用的入口页面。
 - src/test/java：存放项目的测试代码。
 - src/test/resources：存放测试相关的资源文件，如测试配置文件等。
+
+## Maven核心功能依赖和构建管理
+
+### 1.依赖管理和配置
+
+Maven 依赖管理是 Maven 软件中最重要的功能之一。Maven 的依赖管理能够帮助开发人员自动解决软件包依赖问题，使得开发人员能够轻松地将其他开发人员开发的模块或第三方框架集成到自己的应用程序或模块中，避免出现版本冲突和依赖缺失等问题。
+
+我们通过定义 POM 文件，Maven 能够自动解析项目的依赖关系，并通过 Maven **仓库自动**下载和管理依赖，从而避免了手动下载和管理依赖的繁琐工作和可能引发的版本冲突问题。
+
+<font color=red>重点: 编写pom.xml文件!</font>
+
+maven项目信息属性配置和读取
+
+```xml
+<!-- 模型版本 -->
+<modelVersion>4.0.0</modelVersion>
+<!-- 公司或者组织的唯一标志，并且配置时生成的路径也是由此生成， 如com.companyname.project-group，maven会将该项目打成的jar包放本地路径：/com/companyname/project-group -->
+<groupId>com.companyname.project-group</groupId>
+<!-- 项目的唯一ID，一个groupId下面可能多个项目，就是靠artifactId来区分的 -->
+<artifactId>project</artifactId>
+<!-- 版本号 -->
+<version>1.0.0</version>
+
+<!--打包方式
+    默认：jar
+    jar指的是普通的java项目打包方式！ 项目打成jar包！
+    war指的是web项目打包方式！项目打成war包！
+    pom不会讲项目打包！这个项目作为父工程，被其他工程聚合或者继承！后面会讲解两个概念
+-->
+<packaging>jar/pom/war</packaging>
+```
+
+依赖管理和添加
+
+```xml
+<!-- 
+   通过编写依赖jar包的gav必要属性，引入第三方依赖！
+   scope属性是可选的，可以指定依赖生效范围！
+   依赖信息查询方式：
+      1. maven仓库信息官网 https://mvnrepository.com/
+      2. mavensearch插件搜索
+ -->
+<dependencies>
+    <!-- 引入具体的依赖包 -->
+    <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.17</version>
+        <!--
+            生效范围
+            - compile ：main目录 test目录  打包打包 [默认]
+            - provided：main目录 test目录  Servlet
+            - runtime： 打包运行           MySQL
+            - test:    test目录           junit
+         -->
+        <scope>runtime</scope>
+    </dependency>
+
+</dependencies>
+```
+
+以来版本提取和维护
+
+```xml
+<!--声明版本-->
+<properties>
+  <!--命名随便,内部制定版本号即可！-->
+  <junit.version>4.11</junit.version>
+  <!-- 也可以通过 maven规定的固定的key，配置maven的参数！如下配置编码格式！-->
+  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+</properties>
+
+<dependencies>
+  <dependency>
+    <groupId>junit</groupId>
+    <artifactId>junit</artifactId>
+    <!--引用properties声明版本 -->
+    <version>${junit.version}</version>
+  </dependency>
+</dependencies>
+```
+
+pom.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.example</groupId>
+    <artifactId>maven-javase-project-01</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+
+    <!--声明版本-->
+    <properties>
+        <!--声明一个变量！声明完变量以后，在其他位置可以引用${junit.version}
+        注意：声明的标签建议两层以上命名！ version 4.11 推荐：技术名：version
+        -->
+
+        <!--命名随便,内部制定版本号即可！-->
+        <junit.version>4.13.1</junit.version>
+        <!-- 也可以通过 maven规定的固定的key，配置maven的参数！如下配置编码格式！-->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+    <!--第三方依赖信息说明
+        dependencise-项目依赖信息的集合
+        dependency-每个依赖项
+        gav- 依赖的信息，就是其他maven的工程[jar]
+
+        第三方依赖信息怎么知道？
+        依赖信息查询方式：
+      1. maven仓库信息官网 https://mvnrepository.com/
+      2. mavensearch插件搜索
+
+      扩展：
+      1.提取版本号，统一管理
+      2.可选属性scope
+        scope引入依赖的作用域
+        默认：compile main test 打包和运行
+
+            生效范围
+            - compile ：main目录 test目录                  打包和运行 [默认]
+            - provided：main目录 test目录                     Servlet
+            - runtime： 打包运行 main不会有 test 不会用          MySQL
+            - test:    test目录                               junit
+    总结:他是一种锦上添花的手段，如果你掌握不好，那你就默认值，全部生效，你就一定不会错！
+
+    -->
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <!--引用properties声明版本 -->
+            <version>${junit.version}</version>
+            <!--只能在test里用-->
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
+
+</project>
+```
+
