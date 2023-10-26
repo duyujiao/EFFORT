@@ -277,13 +277,13 @@ pom.xml
 </project>
 ```
 
-## 依赖传递和冲突
+### 2.依赖传递和冲突
 
-依赖传递：导入依赖，会自动导入依赖的依赖！（compile dependenices)
+**依赖传递**：导入依赖，会自动导入依赖的依赖！（compile dependenices)
 
 简化依赖的导入 确保依赖的版本五冲突
 
-依赖冲突：发现已经存在依赖（重复依赖）会终止依赖传递，避免循环依赖和重复依赖的问题
+**依赖冲突**：发现已经存在依赖（重复依赖）会终止依赖传递，避免循环依赖和重复依赖的问题
 
 依赖冲突发生场景：重复依赖！
 
@@ -341,7 +341,406 @@ B 2.2（最短）
 
 
 
+  **依赖传递**指的是当一个模块或库 A 依赖于另一个模块或库 B，而 B 又依赖于模块或库 C，那么 A 会间接依赖于 C。这种依赖传递结构可以形成一个依赖树。当我们引入一个库或框架时，构建工具（如 Maven、Gradle）会自动解析和加载其所有的直接和间接依赖，确保这些依赖都可用。
+
+  依赖传递的**作用**是：
+
+  1. 减少重复依赖：当多个项目依赖同一个库时，Maven 可以自动下载并且只下载一次该库。这样可以减少项目的构建时间和磁盘空间。
+  2. 自动管理依赖: Maven 可以自动管理依赖项，使用依赖传递，简化了依赖项的管理，使项目构建更加可靠和一致。
+  3. 确保依赖版本正确性：通过依赖传递的依赖，之间都不会存在版本兼容性问题，确实依赖的版本正确性！
+
+  依赖传递演示：
+
+项目中，需要导入jackson相关的依赖，通过之前导入经验，jackson需要导入三个依赖，分别为：
+
+![img](https://secure2.wostatic.cn/static/463a23mzkd1mo97Fm1rhpS/image.png?auth_key=1698306063-aBNrcfRChxChMqBpcc9Q5X-0-192117870f4d6fd2e084fbb1974d10a0&image_process=resize,w_750&file_size=183752&timestamp=1698306070111)
+
+通过查看网站介绍的依赖传递特性：data-bind中，依赖其他两个依赖(只有Compile Dependencies)
+
+![img](https://secure2.wostatic.cn/static/m8TKvDS5fj34z334a6jPxz/image.png?auth_key=1698306062-29GFTVgKmfHp49Uamf1zzQ-0-324e84a8c942633d9ac29ddaf49297b4&image_process=resize,w_1023&file_size=92298&timestamp=1698306070020)
+
+最佳导入：直接可以导入data-bind，自动依赖传递需要的依赖
+
+```XML
+<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.15.0</version>
+</dependency>
+```
+
+  依赖冲突演示：
+
+  当直接引用或者间接引用出现了相同的jar包! 这时呢，一个项目就会出现相同的重复jar包，这就算作冲突！依赖冲突避免出现重复依赖，并且终止依赖传递！
+
+  ![](https://secure2.wostatic.cn/static/4C2G8BJGLJ4pzmWoGs1Woi/image.png?auth_key=1698306062-9pZZimejXEuYKkEUbGCeUr-0-e7578c1cdf46a8c36480263378daca4a)
+
+  maven自动解决依赖冲突问题能力，会按照自己的原则，进行重复依赖选择。同时也提供了手动解决的冲突的方式，不过不推荐！
+
+  解决依赖冲突（如何选择重复依赖）方式：
+    1. 自动选择原则
+        - 短路优先原则（第一原则）
+
+            A—>B—>C—>D—>E—>X(version 0.0.1)
+    
+            A—>F—>X(version 0.0.2)
+    
+            则A依赖于X(version 0.0.2)。
+        - 依赖路径长度相同情况下，则“先声明优先”（第二原则）
+    
+            A—>E—>X(version 0.0.1)
+    
+            A—>F—>X(version 0.0.2)
+    
+            在<depencies></depencies>中，先声明的，路径相同，会优先选择！
+
+### 3依赖导入失败场景和解决方案
+
+  在使用 Maven 构建项目时，可能会发生依赖项下载错误的情况，主要原因有以下几种：
+
+  1. 下载依赖时出现网络故障或仓库服务器宕机等原因，导致无法连接至 Maven 仓库，从而无法下载依赖。
+  2. 依赖项的版本号或配置文件中的版本号错误，或者依赖项没有正确定义，导致 Maven 下载的依赖项与实际需要的不一致，从而引发错误。
+  3. 本地 Maven 仓库或缓存被污染或损坏，导致 Maven 无法正确地使用现有的依赖项，并且也无法重新下载！
+
+  解决方案：
+
+  1. 检查网络连接和 Maven 仓库服务器状态。
+  2. 确保依赖项的版本号与项目对应的版本号匹配，并检查 POM 文件中的依赖项是否正确。
+  3. 清除本地 Maven 仓库缓存（lastUpdated 文件），因为只要存在lastupdated缓存文件，刷新也不会重新下载。本地仓库中，根据依赖的gav属性依次向下查找文件夹，最终删除内部的文件，刷新重新下载即可！
+
+      例如： pom.xml依赖
+
+```XML
+<dependency>
+  <groupId>com.alibaba</groupId>
+  <artifactId>druid</artifactId>
+  <version>1.2.8</version>
+</dependency>
+```
+
+文件：
+
+![img](https://secure2.wostatic.cn/static/6mSDgf4nkaRLAu16dqSJk7/image.png?auth_key=1698306064-dNsTwyUmPTY19cPXhpm4G7-0-ba015c96f3ca8059690a6a383e391e61&image_process=resize,w_1001&file_size=31454)
+
+​      脚本使用：清理maven错误缓存.bat
+
+脚本下载的文件所在位置：C:\Users\dyj\Downloads
+
+```XML
+使用记事本打开
+set REPOSITORY_PATH=D:\repository  改成你本地仓库地址即可！
+点击运行脚本，即可自动清理本地错误缓存文件！！
+```
+
+
+
+### 4.扩展构建管理和插件配置
+
+**构建概念**：
+
+项目构建是指将<font color=red>源代码，依赖库和资源文件等转换成可执行或可部署的应用程序</font>的过程,在这个过程中包括编译源代码，链接依赖库，打包和部署等多个步骤
+
+清理--》编译--》测试--》报告--》打包--》部署
+
+部署的目的是将开发完成的应用程序或系统交付给最终用户或客户，使其能够在目标环境中运行，并提供所需的功能和服务。部署通常涉及到配置服务器、安装依赖项、设置环境变量、启动应用程序等步骤，以确保应用程序能够顺利运行。
+
+**主动触发场景**：
+
+重新编译：编译不充分，部分文件没有被编译！
+
+打包：独立部署到外部服务器软件，打包部署
+
+部署本地或者私服仓库：maven工程加入到本地或者私服仓库，供其他工程使用
+
+**命令方式构建**：
+
+语法：mvn 构建命令 构建命令...
+
+| 命令        | 描述                                        |
+| ----------- | ------------------------------------------- |
+| mvn clean   | 清理编译或打包后的项目结构,删除target文件夹 |
+| mvn compile | 编译项目，生成target文件                    |
+| mvn test    | 执行测试源码 (测试)                         |
+| mvn site    | 生成一个项目依赖信息的展示页面              |
+| mvn package | 打包项目，生成war / jar 文件                |
+| mvn install | 打包后上传到maven本地仓库(本地部署)         |
+| mvn deploy  | 只打包，上传到maven私服仓库(私服部署)       |
+
+可视化方式构建：在idea的右边
+
+**构建命令周期**：
+
+构建生命周期可以理解成一组固定构建命令的有序集合，<font color=red>触发周期后的命令，会自动触发周期前的命令！</font>
+
+- 清理周期：主要是对项目编译生成文件进行清理
+
+    包含命令：clean
+- 默认周期：定义了真正构件时所需要执行的所有步骤，它是生命周期中最核心的部分
+
+    包含命令：compile - test - package - install / deploy
+- 报告周期
+
+    包含命令：site
+
+    打包: mvn clean package 本地仓库: mvn clean install
+
+**最佳使用方案**：
+
+```纯文本
+打包：mvn clean package
+重新编译：mvn clean compile
+本地部署:mvn clean install
+```
+
+**周期，命令和插件:**
+
+周期→包含若干命令→包含若干插件!
+
+使用周期命令构建，简化构建过程！
+
+最终进行构建的是插件！
+
+插件配置：
+
+```xml
+<build>
+   <!-- jdk17 和 war包版本插件不匹配 -->
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <version>3.2.2</version>
+        </plugin>
+    </plugins>
+</build>
+```
+
+## Maven继承和聚合特性
+
+### 1.Maven工程继承关系
+
+**继承概念**：
+
+Maven 继承是指在 Maven 的项目中，让一个项目从另一个项目中继承配置信息的机制。继承可以让我们在多个项目中共享同一配置信息，简化项目的管理和维护工作。
+
+**继承作用：**
+
+<font color=red>作用：在父工程中统一管理项目中的依赖信息，进行同一版本管理</font>
+
+它的背景是：
+
+- 对一个比较大型的项目进行了模块拆分。
+- 一个 project 下面，创建了很多个 module。
+- 每一个 module 都需要配置自己的依赖信息。
+
+它背后的需求是：
+
+- 多个模块要使用同一个框架，它们应该是同一个版本，所以整个项目中使用的框架版本需要统一管理。
+- 使用框架时所需要的 jar 包组合（或者说依赖信息组合）需要经过长期摸索和反复调试，最终确定一个可用组合。这个耗费很大精力总结出来的方案不应该在新的项目中重新摸索。
+
+通过在父工程中为整个项目维护依赖信息的组合既保证了整个项目使用规范、准确的 jar 包；又能够将以往的经验沉淀下来，节约时间和精力。
+
+**继承语法：**
+
+父工程
+
+```xml
+<groupId>com.atguigu.maven</groupId>
+<artifactId>pro03-maven-parent</artifactId>
+<version>1.0-SNAPSHOT</version>
+<!-- 当前工程作为父工程，它要去管理子工程，所以打包方式必须是 pom -->
+<packaging>pom</packaging>
+
+```
+
+子工程
+
+```xml
+<!-- 使用parent标签指定当前工程的父工程 -->
+<parent>
+  <!-- 父工程的坐标 -->
+  <groupId>com.atguigu.maven</groupId>
+  <artifactId>pro03-maven-parent</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</parent>
+
+<!-- 子工程的坐标 -->
+<!-- 如果子工程坐标中的groupId和version与父工程一致，那么可以省略 -->
+<!-- <groupId>com.atguigu.maven</groupId> -->
+<artifactId>pro04-maven-module</artifactId>
+<!-- <version>1.0-SNAPSHOT</version> -->
+```
+
+maven-pom-parent-02
+
+pom.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.example</groupId>
+    <artifactId>maven-pom-parent-02</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <!-- 父工程不打包，也不写代码-->
+    <packaging>pom</packaging>
+    <modules>
+        <module>shop-order</module>
+    </modules>
+
+    <!--声明版本信息-->
+    <!--导入依赖！此处导入，所有子工程都有相应的依赖-->
+    <dependencies></dependencies>
+    <!--声明依赖，不会下载依赖！可以被子工程继承版本号-->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>2.15.2</version>
+            </dependency>
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>8.0.28</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+
+</project>
+```
+
+shop-user
+
+pom.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.example</groupId>
+        <artifactId>maven-pom-parent-02</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>shop-order</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+    </dependencies>
 
 
 
 
+</project>
+```
+
+**父工程依赖统一管理**
+
+父工程声明版本
+
+```xml
+<!-- 使用dependencyManagement标签配置对依赖的管理 -->
+<!-- 被管理的依赖并没有真正被引入到工程 -->
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-expression</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aop</artifactId>
+      <version>4.0.0.RELEASE</version>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+
+子工程引用版本
+
+```xml
+<!-- 子工程引用父工程中的依赖信息时，可以把版本号去掉。  -->
+<!-- 把版本号去掉就表示子工程中这个依赖的版本由父工程决定。 -->
+<!-- 具体来说是由父工程的dependencyManagement来决定。 -->
+<dependencies>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-core</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-beans</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-expression</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aop</artifactId>
+  </dependency>
+</dependencies>
+```
+
+### 2.Maven工程聚合关系
+
+1. 聚合概念
+
+    Maven 聚合是指将多个项目组织到一个父级项目中，通过触发父工程的构建,统一按顺序触发子工程构建的过程!!
+2. 聚合作用
+    1. 统一管理子项目构建：通过聚合，可以将多个子项目组织在一起，方便管理和维护。
+    2. 优化构建顺序：通过聚合，可以对多个项目进行顺序控制，避免出现构建依赖混乱导致构建失败的情况。
+3. 聚合语法
+
+    父项目中包含的子项目列表。
+
+```XML
+<project>
+  <groupId>com.example</groupId>
+  <artifactId>parent-project</artifactId>
+  <packaging>pom</packaging>
+  <version>1.0.0</version>
+        <!--要统一管理哪些子工程的artifactId-->
+  <modules>
+    <module>child-project1</module>
+    <module>child-project2</module>
+  </modules>
+</project>
+```
+4. 聚合演示
+
+    通过触发父工程构建命令、引发所有子模块构建！产生反应堆！
+
+    ![](https://secure2.wostatic.cn/static/weyQ7odFa3amf3NTtCgyjQ/image.png?auth_key=1698323078-rBXBe3y9b5BKk55CPgzeuw-0-7da560e74f008e2d0ef2273429a018d0)
