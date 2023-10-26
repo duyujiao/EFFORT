@@ -744,3 +744,274 @@ pom.xml
     通过触发父工程构建命令、引发所有子模块构建！产生反应堆！
 
     ![](https://secure2.wostatic.cn/static/weyQ7odFa3amf3NTtCgyjQ/image.png?auth_key=1698323078-rBXBe3y9b5BKk55CPgzeuw-0-7da560e74f008e2d0ef2273429a018d0)
+
+## Maven实战案例：搭建微服务Maven工程架构
+
+### 1.项目需求和结构分析
+
+![](https://secure2.wostatic.cn/static/55JDMJtqJgk1V39q31237Q/image.png?auth_key=1698323859-hBTegC1yuQ3Y1oLV4bSxSs-0-eac5a7027355b2da0284190676300ce1)
+
+需求案例：搭建一个电商平台项目，该平台包括用户服务、订单服务、通用工具模块等。
+
+项目架构：
+
+1. 用户服务：负责处理用户相关的逻辑，例如用户信息的管理、用户注册、登录等。
+2. 订单服务：负责处理订单相关的逻辑，例如订单的创建、订单支付、退货、订单查看等。
+3. 通用模块：负责存储其他服务需要通用工具类，其他服务依赖此模块。
+
+服务依赖：
+
+1. 用户服务 (1.0.1)
+    - spring-context 6.0.6 
+    - spring-core 6.0.6
+    - spring-beans 6.0.6
+    - jackson-databind /  jackson-core / jackson-annotations 2.15.0 
+2. 订单服务 (1.0.1)
+    1. shiro-core 1.10.1 
+    2. spring-context 6.0.6 
+    3. spring-core 6.0.6
+    4. spring-beans 6.0.6
+3. 通用模块 (1.0.1)
+    1. commons-io 2.11.0
+
+### 2.项目搭建和统一管理
+
+![image-20231026213712334](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231026213712334.png)
+
+1. 父模块搭建 (micro-shop)
+    1. 创建父工程
+
+        ![](https://secure2.wostatic.cn/static/q4ub49tpGULm7q2tLaTu1J/image.png?auth_key=1698325009-oHRwkWVxoobTMKwAkYdKQL-0-362d1fab5616b83ce95776d1d4d0e048)
+    2. pom.xml配置
+
+```XML
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.atguigu</groupId>
+    <artifactId>micro-shop</artifactId>
+    <version>1.0.1</version>
+    <!-- 父工程不打包，所以选择pom值-->
+    <packaging>pom</packaging>
+
+    <properties>
+        <spring.version>6.0.6</spring.version>
+        <jackson.version>2.15.0</jackson.version>
+        <shiro.version>1.10.1</shiro.version>
+        <commons.version>2.11.0</commons.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <!-- 依赖管理 -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- spring-context会依赖传递core/beans -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>${spring.version}</version>
+            </dependency>
+
+            <!-- jackson-databind会依赖传递core/annotations -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
+            <!-- shiro-core -->
+            <dependency>
+                <groupId>org.apache.shiro</groupId>
+                <artifactId>shiro-core</artifactId>
+                <version>${shiro.version}</version>
+            </dependency>
+            <!-- commons-io -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons.version}</version>
+            </dependency>
+            
+            
+            
+              <!--把这个粘贴到父工程里，可以在父工程中管理版本-->
+            <!--自己的工程-->
+            <dependency>
+                <groupId>org.example</groupId>
+                <artifactId>common-service</artifactId>
+                <version>1.0.1</version>
+            </dependency>
+            
+            
+
+        </dependencies>
+
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- 父工程添加依赖，会自动传递给所有子工程，不推荐！ -->
+    </dependencies>
+
+    <!-- 统一更新子工程打包插件-->
+    <build>
+        <!-- jdk17 和 war包版本插件不匹配 -->
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.2.2</version>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+```
+2. 通用模块 (common-service)
+    1. 创建模块
+
+        ![](https://secure2.wostatic.cn/static/s29BZ1jzoRgncf5dY8Zecx/image.png?auth_key=1698325009-2SP5igY1tqBFiBGEEFs4jJ-0-b0bf7cb312a5a3c3dfc37541c388f09e)
+
+        ![](https://secure2.wostatic.cn/static/uJF4JRuQqi7GxHtSPEq8Mi/image.png?auth_key=1698325009-oMVc9jM4ZkRKPvjQ6yC5KA-0-cb99e43f11f51a5139abbb154679e536)
+    2. pom.xml配置
+
+```XML
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.atguigu</groupId>
+        <artifactId>micro-shop</artifactId>
+        <version>1.0.1</version>
+    </parent>
+    <artifactId>common-service</artifactId>
+    <!-- 打包方式默认就是jar！ -->
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- 声明commons-io，继承父工程版本 -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>
+```
+3. 用户模块 (user-service)
+    1. 创建模块
+
+        ![](https://secure2.wostatic.cn/static/feDvXd6JWZWLf3MiP1GbQC/image.png?auth_key=1698325009-dEpF8jcTCahoq6ooZzuX8U-0-031d1aad8351d7c29cd549892dd461a4)
+
+        ![](https://secure2.wostatic.cn/static/qxywuU1jKc2rpyn68nGtfU/image.png?auth_key=1698325009-u8f8o7sFXE5PSmLeww6bfS-0-dbbc53b4edc4727b6888cc298a524fa6)
+    2. pom.xml配置
+
+```XML
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">  
+  <modelVersion>4.0.0</modelVersion>  
+  <parent> 
+    <groupId>com.atguigu</groupId>  
+    <artifactId>micro-shop</artifactId>  
+    <version>1.0.1</version> 
+  </parent>  
+  <artifactId>user-service</artifactId>  
+  <packaging>war</packaging>
+
+  <properties> 
+    <maven.compiler.source>17</maven.compiler.source>  
+    <maven.compiler.target>17</maven.compiler.target>  
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding> 
+  </properties>
+
+  <dependencies>
+    <!-- 添加spring-context 自动传递 core / beans -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+
+    <!-- 添加jackson-databind 自动传递 core / annotations -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+      
+      <!--自己的工程-->
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>common-service</artifactId>
+    </dependency>
+      
+  </dependencies>
+</project>
+
+```
+4. 订单模块 (order-service)
+    1. 创建模块
+
+        ![](https://secure2.wostatic.cn/static/gRxngf1p153nByr6Fpp46T/image.png?auth_key=1698325009-mkWfn6VMSDc7DWFQ2pfcRo-0-8aac30bb4b9f82f53e506b3a947a0179)
+
+        ![](https://secure2.wostatic.cn/static/qxywuU1jKc2rpyn68nGtfU/image.png?auth_key=1698325009-riG6UG2rVxE52aMzQAdKeT-0-3797971a140086f95339ba4980e8d8a0)
+    2. pom.xml
+
+```XML
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.atguigu</groupId>
+        <artifactId>micro-shop</artifactId>
+        <version>1.0.1</version>
+    </parent>
+
+    <artifactId>order-service</artifactId>
+    <packaging>war</packaging>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- 继承父工程依赖版本 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+
+        <!-- 继承父工程依赖版本 -->
+        <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-core</artifactId>
+        </dependency>
+        
+        
+        <!--自己的工程-->
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>common-service</artifactId>
+    </dependency>
+        
+        
+    </dependencies>
+
+</project>
+```
+
