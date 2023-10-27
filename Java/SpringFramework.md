@@ -251,5 +251,312 @@ Spring核心容器（把对象2赋值给对象1，只需要写个配置文件告
 
 这就是**DI依赖注入**
 
+## 四、Spring IoC实践和应用
+
+### 1.Spring IoC/DI实现步骤
+
+第一步：编写配置信息，配置文件（xml,注解，配置):（组件类信息，组件之间的引用关系）
+
+配置元数据，既是编写交给SpringIoC容器管理组件的信息，配置方式有三种。
+
+基于 XML 的配置元数据的基本结构：
+
+<bean id="..." [1] class="..." [2]>  
+    <!-- collaborators and configuration for this bean go here -->
+  </bean>
+
+```XML
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 此处要添加一些约束，配置文件的标签并不是随意命名 -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    https://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean id="..." [1] class="..." [2]>  
+    <!-- collaborators and configuration for this bean go here -->
+  </bean>
+
+  <bean id="..." class="...">
+    <!-- collaborators and configuration for this bean go here -->
+  </bean>
+  <!-- more bean definitions go here -->
+</beans>
+```
+
+Spring IoC 容器管理一个或多个组件。这些 组件是使用你提供给容器的配置元数据（例如，以 XML `<bean/>` 定义的形式）创建的。
+
+<bean /> 标签 == 组件信息声明
+
+- `id` 属性是标识单个 Bean 定义的字符串。
+- `class` 属性定义 Bean 的类型并使用完全限定的类名。
+
+第二步：要指定配置信息，实例化ioc容器对象：（(IoC/DI）组件 组件 组件)
+
+提供给 `ApplicationContext` 构造函数的位置路径是资源字符串地址，允许容器从各种外部资源（如本地文件系统、Java `CLASSPATH` 等）加载配置元数据。
+
+我们应该选择一个合适的容器实现类，进行IoC容器的实例化工作：
+
+```Java
+//实例化ioc容器,读取外部配置文件,最终会在容器内进行ioc和di动作
+ApplicationContext context = 
+           new ClassPathXmlApplicationContext("services.xml", "daos.xml");
+```
+
+第三步：如何在Java代码中获取组件（Bean）  使用组件
+
+`ApplicationContext` 是一个高级工厂的接口，能够维护不同 bean 及其依赖项的注册表。通过使用方法 `T getBean(String name, Class<T> requiredType)` ，您可以检索 bean 的实例。
+
+允许读取 Bean 定义并访问它们，如以下示例所示：
+
+```Java
+//创建ioc容器对象，指定配置文件，ioc也开始实例组件对象
+ApplicationContext context = new ClassPathXmlApplicationContext("services.xml", "daos.xml");
+//获取ioc容器的组件对象
+PetStoreService service = context.getBean("petStore", PetStoreService.class);
+//使用组件对象
+List<String> userList = service.getUsernameList();
+```
+
+### 2.基于XML配置方式组件管理
+
+自己如何实例化对象？不考虑反射！！
+
+**类**
+
+构造函数实例化（无参数构造函数和有参数构造函数实例化)
+
+工厂模式实例化(静态工厂和非静态工厂)
+
+不同的实例化方式对象和组件，ioc的配置方式也不同
+
+#### 2.1实验一：组件(Bean)信息声明配置(IoC)
+
+1. 目标
+
+    Spring IoC 容器管理一个或多个 bean。这些 Bean 是使用您提供给容器的配置元数据创建的（例如，以 XML `<bean/>` 定义的形式）。
+
+    我们学习，如何通过定义XML配置文件，声明组件类信息，交给 Spring 的 IoC 容器进行组件管理！
+2. 思路
+
+    ![](http://heavy_code_industry.gitee.io/code_heavy_industry/assets/img/img006.c8bae859.png)
+3. 准备项目
+    1. 创建maven工程（spring-ioc-xml-01）
+    2. 导入SpringIoC相关依赖
+
+        pom.xml
+
+```XML
+<dependencies>
+    <!--spring context依赖-->
+    <!--当你引入Spring Context依赖之后，表示将Spring的基础依赖引入了-->
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>6.0.6</version>
+    </dependency>
+    <!--junit5测试-->
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>5.3.1</version>
+    </dependency>
+</dependencies>
+
+```
+
+4.基于无参数构造函数
+
+> 当通过构造函数方法创建一个bean(组件对象)时，所有普通类都可以由Spring使用并与之兼容。也就是说，正在开发的类不需要实现特定的接口或以特定的方式进行编码。只需要指定Bean类信息就足够了。但是，默认情况下，我们需要一个默认(空)构造函数
+
+
+
+a.准备组件类
+
+```java
+package org.example.ioc_01;
+
+public class HappyComponent {
+    //默认包含无参数构造函数
+    public void doWork(){
+        System.out.println("HappyComponent.doWork");
+    }
+}
+
+```
+
+b.xml配置文件编写
+
+创建携带spring约束的xml配置文件：resouces右键--new--XML配置文件
+
+![img](https://secure2.wostatic.cn/static/7eC1WeTyXz1oLaGkPfJBfh/image.png?auth_key=1698406116-7jyY7i6amYbPC1V62vD9dN-0-d6444aa60269a4126188f433604001c3&image_process=resize,w_940&file_size=69946)
+
+编写配置文件：文件：resources/spring-bean-01.xml
+
+```java
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- 1.可以使用无参数构造函数实例化的组件，如何进行ioc配置呢
+    <bean  -  一个组件信息  - 一个组件对象
+            id :组件的标识 唯一 方便后期读取
+            class :组件的类的权限定符
+            将一个组件类 - 声明两个组件信息 - [默认是单例模式] - 会实例化两个组件对象
+            new
+            new
+      -->
+    <bean id="happyComponent1" class="org.example.ioc_01.HappyComponent"/>
+    <bean id="happyComponent2" class="org.example.ioc_01.HappyComponent"/>
+
+</beans>
+```
+
+
+
+bean标签：通过配置bean标签告诉IOC容器需要创建对象的组件信息
+
+id属性：bean的唯一标识，方便后期获取Bean
+
+class属性：组件类的全限定符
+
+<font color=red>注意：要求当前组件类必须包含无参数构造函数</font>,构造函数私有也没关系
+
+5.基于静态工厂方法实例化
+
+> 除了使用构造函数实例化对象，还有一类是通过工厂模式实例化对象。接下来我们讲解如何定义使用静态工厂方法创建Bean的配置 ！
+
+a.准备组件类
+
+```java
+package org.example.ioc_01;
+
+public class ClientService {
+    private static ClientService clientService = new ClientService();
+    private ClientService() {}
+
+    public static ClientService createInstance() {
+
+        return clientService;
+    }
+}
+
+```
+
+
+
+b.xml配置文件编写
+
+文件：resources/spring-bean-01.xml
+
+```java
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- 1.可以使用无参数构造函数实例化的组件，如何进行ioc配置呢
+    <bean  -  一个组件信息  - 一个组件对象
+            id :组件的标识 唯一 方便后期读取
+            class :组件的类的权限定符
+            将一个组件类 - 声明两个组件信息 - [默认是单例模式] - 会实例化两个组件对象
+            new
+            new
+      -->
+    <bean id="happyComponent1" class="org.example.ioc_01.HappyComponent"/>
+    <bean id="happyComponent2" class="org.example.ioc_01.HappyComponent"/>
+
+
+    <!-- 2.静态工厂类如何声明工厂方法进行ioc配置
+        <bean
+            id="组件的表示"
+            class="工厂类的全限定符"
+            factory-method="静态工厂方法"
+            -->
+    <bean id="clientService" class="org.example.ioc_01.ClientService" factory-method="createInstance"/>
+
+</beans>
+```
+
+class属性：指定工厂类的全限定符
+
+factory-method:指定静态工厂方法  <font color=red>注意：该方法必须是静态方法，去掉static，就会报错</font>
+
+6.基于实例工厂方法实例化
+
+> 接下来我们讲解一下如何定义使用实例工厂方法创建Bean的配置
+
+a.准备组件类
+
+```java
+package org.example.ioc_01;
+
+public class ClientServiceImpl {
+}
+
+```
+
+```java
+package org.example.ioc_01;
+
+public class DefaultServiceLocator {
+    private static ClientServiceImpl clientService = new ClientServiceImpl();
+
+    public ClientServiceImpl createClientServiceInstance() {
+        return clientService;
+    }
+}
+
+```
+
+b.xml配置文件编写
+
+文件：resources/spring-bean-01.xml
+
+```java
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- 1.可以使用无参数构造函数实例化的组件，如何进行ioc配置呢
+    <bean  -  一个组件信息  - 一个组件对象
+            id :组件的标识 唯一 方便后期读取
+            class :组件的类的权限定符
+            将一个组件类 - 声明两个组件信息 - [默认是单例模式] - 会实例化两个组件对象
+            new
+            new
+      -->
+    <bean id="happyComponent1" class="org.example.ioc_01.HappyComponent"/>
+    <bean id="happyComponent2" class="org.example.ioc_01.HappyComponent"/>
+
+
+    <!-- 2.静态工厂类如何声明工厂方法进行ioc配置
+        <bean
+            id="组件的表示"
+            class="工厂类的全限定符"
+            factory-method="静态工厂方法"
+            -->
+    <bean id="clientService" class="org.example.ioc_01.ClientService" factory-method="createInstance"/>
+
+    <!-- 3.非静态工厂如何声明ioc配置-->
+    <!-- 3.1 配置工厂类的组件信息 -->
+    <bean id="defaultServiceLocator" class="org.example.ioc_01.DefaultServiceLocator"/>
+    <!-- 3.2 通过指定非静态工厂对象和方法名 来配置生成的ioc信息-->
+    <bean id="clientService2" factory-bean="defaultServiceLocator" factory-method="createClientServiceInstance"/>
+</beans>
+```
+
+factory-bean属性：指定当前容器中工厂Bean的名称
+
+factory-method:指定实例工厂方法名。<font color=red>注意：实例方法必须是非static</font>
+
+7.图解IoC配置流程
+
+![image](C:\Users\dyj\Pictures\Saved Pictures\image.png)
+
+
+
 
 
