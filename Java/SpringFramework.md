@@ -105,3 +105,93 @@ SpringFramework框架结构图：
 
 Spring 使创建 Java 企业应用程序变得容易。它提供了在企业环境中采用 Java 语言所需的一切，支持 Groovy 和 Kotlin 作为 JVM 上的替代语言，并且可以根据应用程序的需求灵活地创建多种架构。**从Spring Framework 6.0.6开始，Spring 需要 Java 17+。**
 
+## 三、Spring IoC容器和核心概念
+
+### 1.组件和组件管理概念
+
+#### 1.1什么是组件？
+
+回顾常规的三层架构处理请求流程：
+
+![img](https://secure2.wostatic.cn/static/i5cYp4uqLG3mVEKEv2qofF/image.png?auth_key=1698385357-9BnZfBnCk5Lmi269ESuu5S-0-3629dfb28bbb1e77be51ebc0c70d78db&image_process=resize,w_1199&file_size=19814)
+
+整个项目就是由各种组件搭建而成的：
+
+![img](https://secure2.wostatic.cn/static/8LSuy5YWXmufYmPWM894rN/image.png?auth_key=1698385357-qnHXTdx9pmDnhaYc8DB37M-0-ffe2e53f53a42091cf1745a2c8357ab2&image_process=resize,w_1199&file_size=31162)
+
+#### 1.2我们的期待
+
+- 有人替我们创建组件的对象
+- 有人帮我们保存组件的对象
+- 有人帮助我们自动组装
+- 有人替我们管理事务
+- 有人协助我们整合其他框架
+- ......
+
+#### 1.3Spring充当组件管理角色(Ioc)
+
+那么谁帮我们完成我们的期待，帮我们管理组件呢？
+
+当然是Spring 框架了！
+
+组件可以完全交给Spring 框架进行管理，Spring框架替代了程序员原有的new对象和对象属性赋值动作等！
+
+Spring具体的组件管理动作包含：
+
+- 组件对象实例化
+- 组件属性属性赋值
+- 组件对象之间引用
+- 组件对象存活周期管理
+- ......
+
+我们只需要编写元数据（配置文件）告知Spring 管理哪些类组件和他们的关系即可！
+
+注意：<font color=red>组件</font>是映射到应用程序中所有可重用组件的Java对象，应该是<font color=red>可复用的</font>功能组件
+
+<font color=red>组件一定是对象，对象不一定是组件</font>
+
+综上所述，Spring 充当一个组件容器，创建、管理、存储组件，减少了我们的编码压力，让我们更加专注进行业务编写！
+
+#### 1.4组件交给Spring管理优势
+
+1. 降低了组件之间的耦合性：Spring IoC容器通过依赖注入机制，将组件之间的依赖关系削弱，减少了程序组件之间的耦合性，使得组件更加松散地耦合。
+2. 提高了代码的可重用性和可维护性：将组件的实例化过程、依赖关系的管理等功能交给Spring IoC容器处理，使得组件代码更加模块化、可重用、更易于维护。
+3. 方便了配置和管理：Spring IoC容器通过XML文件或者注解，轻松的对组件进行配置和管理，使得组件的切换、替换等操作更加的方便和快捷。
+4. 交给Spring管理的对象（组件），方可享受Spring框架的其他功能（AOP,声明事务管理）等
+
+### 2.Spring Ioc容器和容器实现
+
+#### 2.1普通容器和复杂容器
+
+**普通容器**：
+
+生活中的普通容器：水杯，> 普通容器只能用来存储，没有更多功能。
+
+程序中的普通容器：数组，集合List,集合Set
+
+**复杂容器：**
+
+生活中的复杂容器：政府管理我们的一生，生老病死都和政府有关。![img](https://api.wolai.com/v1/proxy/image?src=http%3A%2F%2Fheavy_code_industry.gitee.io%2Fcode_heavy_industry%2Fassets%2Fimg%2Fimg003.6f9c041c.png&spaceId=fqkGyHKKxSnzkhVZnoSxhC&userId=&image_process=resize,w_944)
+
+程序中的复杂容器：Servlet 容器，能够管理 Servlet(init,service,destroy)、Filter、Listener 这样的组件的一生，所以它是一个复杂容器。
+
+| 名称       | 时机                                                         | 次数 |
+| ---------- | ------------------------------------------------------------ | ---- |
+| 创建对象   | 默认情况：接收到第一次请求  修改启动顺序后：Web应用启动过程中 | 一次 |
+| 初始化操作 | 创建对象之后                                                 | 一次 |
+| 处理请求   | 接收到请求                                                   | 多次 |
+| 销毁操作   | Web应用卸载之前                                              | 一次 |
+
+我们即将要学习的 SpringIoC 容器也是一个复杂容器。它们不仅要负责创建组件的对象、存储组件的对象，还要负责调用组件的方法让它们工作，最终在特定情况下销毁组件。
+
+总结：Spring管理组件的容器，就是一个复杂容器，不仅存储组件，也可以管理组件之间依赖关系，并且创建和销毁组件等！
+
+#### 2.2SpringIoc容器介绍
+
+Spring Ioc容器，负责实例化，配置和组装bean(组件)。容器通过读取配置元数据来获取有关要实例化、配置和组装组件的指令。<font color=red>配置元数据以XML、Java注解或Java代码形式表现</font>
+
+它允许表达组成应用程序的组件以及这些组件之间丰富的相互依赖关系。
+
+![img](https://secure2.wostatic.cn/static/mFt9PQ2ggCqB193CC57AKi/image.png?auth_key=1698387314-cn3bzM6mw5371Ugreoggbg-0-0d2c44787ea22bd03259edb294c7b4f9&image_process=resize,w_1004&file_size=11514)
+
+上图显示了 Spring 容器工作原理的高级视图。应用程序类与配置元数据相结合，您拥有完全配置且可执行的系统或应用程序。
