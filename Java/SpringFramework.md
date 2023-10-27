@@ -195,3 +195,61 @@ Spring Ioc容器，负责实例化，配置和组装bean(组件)。容器通过�
 ![img](https://secure2.wostatic.cn/static/mFt9PQ2ggCqB193CC57AKi/image.png?auth_key=1698387314-cn3bzM6mw5371Ugreoggbg-0-0d2c44787ea22bd03259edb294c7b4f9&image_process=resize,w_1004&file_size=11514)
 
 上图显示了 Spring 容器工作原理的高级视图。应用程序类与配置元数据相结合，您拥有完全配置且可执行的系统或应用程序。
+
+#### 2.3SpringIoc容器具体接口和实现类
+
+SpringFactory接口提供了一种高级配置机制，能够管理任何类型的对象，它是SpringIoc容器标准化超接口！
+
+ApplicationContext是BeanFactory的子接口，它扩展了以下功能：
+
+- 更容易与 Spring 的 AOP 功能集成
+- 消息资源处理（用于国际化）
+- 特定于应用程序给予此接口实现，例如Web 应用程序的 `WebApplicationContext`
+
+简而言之， BeanFactory 提供了配置框架和基本功能，而 ApplicationContext 添加了更多特定于企业的功能。 ApplicationContext 是 BeanFactory 的完整超集！
+
+**ApplicationContext容器实现类：**
+
+![img](https://api.wolai.com/v1/proxy/image?src=http%3A%2F%2Fheavy_code_industry.gitee.io%2Fcode_heavy_industry%2Fassets%2Fimg%2Fimg004.f6680aef.png&spaceId=fqkGyHKKxSnzkhVZnoSxhC&userId=&image_process=resize,w_1004)
+
+| 类型名                             | 简介                                                         |
+| ---------------------------------- | ------------------------------------------------------------ |
+| ClassPathXmlApplicationContext     | 通过读取类路径下的 XML 格式的配置文件创建 IOC 容器对象       |
+| FileSystemXmlApplicationContext    | 通过文件系统路径读取 XML 格式的配置文件创建 IOC 容器对象     |
+| AnnotationConfigApplicationContext | 通过读取Java配置类创建 IOC 容器对象                          |
+| WebApplicationContext              | 专门为 Web 应用准备，基于 Web 环境创建 IOC 容器对象，并将对象引入存入 ServletContext 域中。 |
+
+#### 2.4SpringIoc容器管理配置方式
+
+Spring IoC 容器使用多种形式的配置元数据。此配置元数据表示您作为应用程序开发人员如何告诉 Spring 容器实例化、配置和组装应用程序中的对象。
+
+![img](https://secure2.wostatic.cn/static/mFt9PQ2ggCqB193CC57AKi/image.png?auth_key=1698396605-qFqv3MptDcmshEf5UrfrNH-0-b50dd86c50a150fedd88c607e70763bb&image_process=resize,w_936&file_size=11514)
+
+
+
+Spring框架提供了多种配置方式：**XML配置方式、注解方式和Java配置类方式**
+
+1. XML配置方式：是Spring框架最早的配置方式之一，通过在XML文件中定义Bean及其依赖关系、Bean的作用域等信息，让Spring IoC容器来管理Bean之间的依赖关系。该方式从Spring框架的第一版开始提供支持。
+2. 注解方式：从Spring 2.5版本开始提供支持，可以通过在Bean类上使用注解来代替XML配置文件中的配置信息。通过在Bean类上加上相应的注解（如@Component, @Service, @Autowired等），将Bean注册到Spring IoC容器中，这样Spring IoC容器就可以管理这些Bean之间的依赖关系。
+3. <font color=red>**Java配置类**</font>方式：从Spring 3.0版本开始提供支持，通过Java类来定义Bean、Bean之间的依赖关系和配置信息，从而代替XML配置文件的方式。Java配置类是一种使用Java编写配置信息的方式，通过@Configuration、@Bean等注解来实现Bean和依赖关系的配置。
+
+为了迎合当下开发环境，我们将以<font color=red>**配置类+注解方式**</font>为主进行讲解！
+
+### 3.Spring IoC/DI概念总结
+
+Sping的核心容器就两个功能：IoC和DI
+
+类<--------------Java代码（new 类()------------------->权力交给程序员）
+
+类<--------------spring核心容器（ioc容器中完成实例化反射---------------->权力交给核心容器spring)
+
+这就是**IoC控制反转**
+
+Java代码（把对象2赋值给对象1，有构造方法，set方法等等）
+
+Spring核心容器（把对象2赋值给对象1，只需要写个配置文件告诉它）
+
+这就是**DI依赖注入**
+
+
+
