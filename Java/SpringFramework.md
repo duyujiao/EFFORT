@@ -894,4 +894,99 @@ ref = 引用bean的id值
     
     ```
 
+    #### 2.4实验四：高级特性：组件(Bean)作用域和周期方法的配置
+
+      1. 组件周期方法配置
+          1. 周期方法概念
+
+              我们可以在组件类中定义方法，然后当IoC容器实例化和销毁组件对象的时候进行调用！这两个方法我们成为生命周期方法！
+
+              类似于Servlet的init/destroy方法,我们可以在周期方法完成初始化和释放资源等工作。
+          2. 周期方法声明
+
+    ```Java
+    public class BeanOne {
+    
+      //周期方法要求： 方法命名随意，但是要求方法必须是 public void 无形参列表
+      public void init() {
+        // 初始化逻辑
+      }
+    }
+    
+    public class BeanTwo {
+    
+      public void cleanup() {
+        // 释放资源逻辑
+      }
+    }
+    ```
+    3. 周期方法配置
+
+    ```XML
+    <beans>
+      <bean id="beanOne" class="examples.BeanOne" init-method="init" />
+      <bean id="beanTwo" class="examples.BeanTwo" destroy-method="cleanup" />
+    </beans>
+    ```
+      2. 组件作用域配置
+          1. Bean作用域概念
+
+              `<bean` 标签声明Bean，只是将Bean的信息配置给SpringIoC容器！
+
+              在IoC容器中，这些`<bean`标签对应的信息转成Spring内部 `BeanDefinition` 对象，`BeanDefinition` 对象内，包含定义的信息（id,class,属性等等）！
+
+              这意味着，`BeanDefinition`与`类`概念一样，SpringIoC容器可以可以根据`BeanDefinition`对象反射创建多个Bean对象实例。
+
+              具体创建多少个Bean的实例对象，由Bean的作用域Scope属性指定！
+          2. 作用域可选值
+
+    | 取值      | 含义                                        | 创建对象的时机   | 默认值 |
+    | --------- | ------------------------------------------- | ---------------- | ------ |
+    | singleton | 在 IOC 容器中，这个 bean 的对象始终为单实例 | IOC 容器初始化时 | 是     |
+    | prototype | 这个 bean 在 IOC 容器中有多个实例           | 获取 bean 时     | 否     |
+
+    如果是在WebApplicationContext环境下还会有另外两个作用域（但不常用）：
+
+    | 取值    | 含义                 | 创建对象的时机 | 默认值 |
+    | ------- | -------------------- | -------------- | ------ |
+    | request | 请求范围内有效的实例 | 每次请求       | 否     |
+    | session | 会话范围内有效的实例 | 每次会话       | 否     |
+
+         3. 作用域配置
+        
+            配置scope范围
+
+    ```XML
+    <!--bean的作用域 
+        准备两个引用关系的组件类即可！！
+    -->
+    <!-- scope属性：取值singleton（默认值），bean在IOC容器中只有一个实例，IOC容器初始化时创建对象 -->
+    <!-- scope属性：取值prototype，bean在IOC容器中可以有多个实例，getBean()时创建对象 -->
+    <bean id="happyMachine8" scope="prototype" class="com.atguigu.ioc.HappyMachine">
+        <property name="machineName" value="happyMachine"/>
+    </bean>
+    
+    <bean id="happyComponent8" scope="singleton" class="com.atguigu.ioc.HappyComponent">
+        <property name="componentName" value="happyComponent"/>
+    </bean>
+    ```
+    4. 作用域测试
+
+    ```Java
+    @Test
+    public void testExperiment08()  {
+        ApplicationContext iocContainer = new ClassPathXmlApplicationContext("配置文件名");
+    
+        HappyMachine bean = iocContainer.getBean(HappyMachine.class);
+        HappyMachine bean1 = iocContainer.getBean(HappyMachine.class);
+        //多例对比 false
+        System.out.println(bean == bean1);
+    
+        HappyComponent bean2 = iocContainer.getBean(HappyComponent.class);
+        HappyComponent bean3 = iocContainer.getBean(HappyComponent.class);
+        //单例对比 true
+        System.out.println(bean2 == bean3);
+    }
+    ```
+
     
