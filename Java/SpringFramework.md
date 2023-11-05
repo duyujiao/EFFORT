@@ -768,225 +768,912 @@ ref = 引用bean的id值
 
 #### 2.3实验三：IoC容器创建和使用
 
-1. 介绍
+1.介绍
 
-    上面的实验只是讲解了如何在XML格式的配置文件编写IoC和DI配置！
+上面的实验只是讲解了如何在XML格式的配置文件编写IoC和DI配置！
 
-    如图：
+如图：
 
-    ![](https://secure2.wostatic.cn/static/ngQZT7qhVfAzTxrr2oX1ny/image.png?auth_key=1698748379-gU9RECzwFYTF2r2vfee5fE-0-571657b25494e4bf549fba3f5b611118)
+![](https://secure2.wostatic.cn/static/ngQZT7qhVfAzTxrr2oX1ny/image.png?auth_key=1698748379-gU9RECzwFYTF2r2vfee5fE-0-571657b25494e4bf549fba3f5b611118)
 
-    想要配置文件中声明组件类信息真正的进行实例化成Bean对象和形成Bean之间的引用关系，我们需要声明IoC容器对象，读取配置文件，实例化组件和关系维护的过程都是在IoC容器中实现的！
+想要配置文件中声明组件类信息真正的进行实例化成Bean对象和形成Bean之间的引用关系，我们需要声明IoC容器对象，读取配置文件，实例化组件和关系维护的过程都是在IoC容器中实现的！
 
-2. 容器实例化和Bean对象读取
+2.容器实例化和Bean对象读取
 
-    ```java
-    package org.example.test;
-    
-    //文件地址D:\javacode\ssm-spring-part\spring-ioc-xml-01\src\test\java\org.example.test\SpringIoCTest
-    
-    //ioc容器创建和读取组件的测试类
-    //创建就是实例化
-    
-    import org.example.ioc_03.HappyComponent;
-    import org.junit.jupiter.api.Test;
-    import org.springframework.context.ApplicationContext;
-    import org.springframework.context.support.ClassPathXmlApplicationContext;
-    
-    public class SpringIoCTest {
-    
-        //讲解如何创建ioc容器并且读取配置文件
-        public void createIoC()
-        {
-            //创建容器 选择合适的容器实现即可
-            /*
-            接口
-            BeanFactory
-    
-            ApplicationContext
-    
-            实现类
-    
-            ClassPathXmlApplicationContext 读取类路径下的xml配置方式
-            FileSystemXmlApplicationContext 读取指定文件位置的xml配置方式 比如说c盘D盘
-            AnnotationConfigApplicationContext 读取配置类方式的ioc容器
-            WebApplicationContext web项目专属的配置的ioc容器
-             */
-    
-            //方式一：直接创建容器并且指定配置文件
-            //构造函数（Spring...配置文件）可以填写一个或者多个
-            ApplicationContext applicationContext=new ClassPathXmlApplicationContext("spring-03.xml","spring-x.xml");
-            //方式二;先创建ioc容器对象，再指定配置文件，再刷新
-            //源码的配置过程！创建容器[spring]和配置文件指定分开[自己指定]
-            ClassPathXmlApplicationContext applicationContext1=new ClassPathXmlApplicationContext();
-            applicationContext1.setConfigLocations("spring-03.xml");//外部配置文件的设置
-            applicationContext1.refresh();//调用ioc和DI的流程
-    
-    
-    
-        }
-        @Test
-    
-        //讲解如何在IoC容器中获取组件Bean
-        public void getBeanFromIoC() {
-            //1.创建ioc容器对象
-            ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
-            applicationContext.setConfigLocations("spring-03.xml");
-            //注意不刷新不行
-            applicationContext.refresh();
-    
-            //2.读取ioc容器的组件
-            //方案一：直接根据beanId获取即可  返回值类型是Object 需要强转（不推荐）
-            HappyComponent happyComponent = (HappyComponent) applicationContext.getBean("happyComponent");
-    
-            //方案二：根据beanId,同时指定bean的类型Class
-            //applicationContext.getBean("happycomponent", HappyComponent.class).var回车
-    
-            HappyComponent happyComponent1 = applicationContext.getBean("happyComponent", HappyComponent.class);
-    
-            //方案三：：直接根据类型获取
-            //注意：根据bean类型获取，同一个类型，在ioc容器中只能有一个bean
-            //如果ioc容器存在多个同类型的Bean，会出现：NoUniqueBeanDefinitionException
-            //ioc的配置一定是实现类，但是可以根据接口类型获取值！getBean(类型);instanceof ioc容器的类型==true
-            /*
-            根据类型来获取bean时，在满足bean唯一性的前提下，其实只是看：『对象 instanceof 指定的类型』的返回结果，
-           只要返回的是true就可以认定为和类型匹配，能够获取到。
-            */
-            HappyComponent happyComponent2 = applicationContext.getBean(HappyComponent.class);
-    
-            happyComponent2.doWork();
-            System.out.println(happyComponent==happyComponent1);
-            System.out.println(happyComponent2==happyComponent1);
-    
-            //运行结果
-            //HappyComponent.doWork
-            //true
-            //true
-        }
-        }
-    
-    ```
+```java
+package org.example.test;
 
-    ```xml
-    <!--spring-03.xml-->
-    <?xml version="1.0" encoding="UTF-8"?>
-    <beans xmlns="http://www.springframework.org/schema/beans"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    
-    
-            <!--组件的信息 ioc的配置-》applicationContext读取了-》实例化对象
-                    ioc的配置一定是实现类！真正要进行实例化！
-            -->
-            <bean id="happyComponent" class="org.example.ioc_03.HappyComponent"/>
-    </beans>
-    ```
+//文件地址D:\javacode\ssm-spring-part\spring-ioc-xml-01\src\test\java\org.example.test\SpringIoCTest
 
-    ```java
-    package org.example.ioc_03;
-    //HappyComponent.java
-    public class HappyComponent {
-        //默认包含无参数构造函数
-        public void doWork(){
-            System.out.println("HappyComponent.doWork");
-        }
+//ioc容器创建和读取组件的测试类
+//创建就是实例化
+
+import org.example.ioc_03.HappyComponent;
+import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+public class SpringIoCTest {
+
+    //讲解如何创建ioc容器并且读取配置文件
+    public void createIoC()
+    {
+        //创建容器 选择合适的容器实现即可
+        /*
+        接口
+        BeanFactory
+
+        ApplicationContext
+
+        实现类
+
+        ClassPathXmlApplicationContext 读取类路径下的xml配置方式
+        FileSystemXmlApplicationContext 读取指定文件位置的xml配置方式 比如说c盘D盘
+        AnnotationConfigApplicationContext 读取配置类方式的ioc容器
+        WebApplicationContext web项目专属的配置的ioc容器
+         */
+
+        //方式一：直接创建容器并且指定配置文件
+        //构造函数（Spring...配置文件）可以填写一个或者多个
+        ApplicationContext applicationContext=new ClassPathXmlApplicationContext("spring-03.xml","spring-x.xml");
+        //方式二;先创建ioc容器对象，再指定配置文件，再刷新
+        //源码的配置过程！创建容器[spring]和配置文件指定分开[自己指定]
+        ClassPathXmlApplicationContext applicationContext1=new ClassPathXmlApplicationContext();
+        applicationContext1.setConfigLocations("spring-03.xml");//外部配置文件的设置
+        applicationContext1.refresh();//调用ioc和DI的流程
+
+
+
     }
-    
-    ```
-
-    #### 2.4实验四：高级特性：组件(Bean)作用域和周期方法的配置
-
-      1. 组件周期方法配置
-          1. 周期方法概念
-
-              我们可以在组件类中定义方法，然后当IoC容器实例化和销毁组件对象的时候进行调用！这两个方法我们成为生命周期方法！
-
-              类似于Servlet的init/destroy方法,我们可以在周期方法完成初始化和释放资源等工作。
-          2. 周期方法声明
-
-    ```Java
-    public class BeanOne {
-    
-      //周期方法要求： 方法命名随意，但是要求方法必须是 public void 无形参列表
-      public void init() {
-        // 初始化逻辑
-      }
-    }
-    
-    public class BeanTwo {
-    
-      public void cleanup() {
-        // 释放资源逻辑
-      }
-    }
-    ```
-    3. 周期方法配置
-
-    ```XML
-    <beans>
-      <bean id="beanOne" class="examples.BeanOne" init-method="init" />
-      <bean id="beanTwo" class="examples.BeanTwo" destroy-method="cleanup" />
-    </beans>
-    ```
-      2. 组件作用域配置
-          1. Bean作用域概念
-
-              `<bean` 标签声明Bean，只是将Bean的信息配置给SpringIoC容器！
-
-              在IoC容器中，这些`<bean`标签对应的信息转成Spring内部 `BeanDefinition` 对象，`BeanDefinition` 对象内，包含定义的信息（id,class,属性等等）！
-
-              这意味着，`BeanDefinition`与`类`概念一样，SpringIoC容器可以可以根据`BeanDefinition`对象反射创建多个Bean对象实例。
-
-              具体创建多少个Bean的实例对象，由Bean的作用域Scope属性指定！
-          2. 作用域可选值
-
-    | 取值      | 含义                                        | 创建对象的时机   | 默认值 |
-    | --------- | ------------------------------------------- | ---------------- | ------ |
-    | singleton | 在 IOC 容器中，这个 bean 的对象始终为单实例 | IOC 容器初始化时 | 是     |
-    | prototype | 这个 bean 在 IOC 容器中有多个实例           | 获取 bean 时     | 否     |
-
-    如果是在WebApplicationContext环境下还会有另外两个作用域（但不常用）：
-
-    | 取值    | 含义                 | 创建对象的时机 | 默认值 |
-    | ------- | -------------------- | -------------- | ------ |
-    | request | 请求范围内有效的实例 | 每次请求       | 否     |
-    | session | 会话范围内有效的实例 | 每次会话       | 否     |
-
-         3. 作用域配置
-        
-            配置scope范围
-
-    ```XML
-    <!--bean的作用域 
-        准备两个引用关系的组件类即可！！
-    -->
-    <!-- scope属性：取值singleton（默认值），bean在IOC容器中只有一个实例，IOC容器初始化时创建对象 -->
-    <!-- scope属性：取值prototype，bean在IOC容器中可以有多个实例，getBean()时创建对象 -->
-    <bean id="happyMachine8" scope="prototype" class="com.atguigu.ioc.HappyMachine">
-        <property name="machineName" value="happyMachine"/>
-    </bean>
-    
-    <bean id="happyComponent8" scope="singleton" class="com.atguigu.ioc.HappyComponent">
-        <property name="componentName" value="happyComponent"/>
-    </bean>
-    ```
-    4. 作用域测试
-
-    ```Java
     @Test
-    public void testExperiment08()  {
-        ApplicationContext iocContainer = new ClassPathXmlApplicationContext("配置文件名");
-    
-        HappyMachine bean = iocContainer.getBean(HappyMachine.class);
-        HappyMachine bean1 = iocContainer.getBean(HappyMachine.class);
-        //多例对比 false
-        System.out.println(bean == bean1);
-    
-        HappyComponent bean2 = iocContainer.getBean(HappyComponent.class);
-        HappyComponent bean3 = iocContainer.getBean(HappyComponent.class);
-        //单例对比 true
-        System.out.println(bean2 == bean3);
-    }
-    ```
 
+    //讲解如何在IoC容器中获取组件Bean
+    public void getBeanFromIoC() {
+        //1.创建ioc容器对象
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
+        applicationContext.setConfigLocations("spring-03.xml");
+        //注意不刷新不行
+        applicationContext.refresh();
+
+        //2.读取ioc容器的组件
+        //方案一：直接根据beanId获取即可  返回值类型是Object 需要强转（不推荐）
+        HappyComponent happyComponent = (HappyComponent) applicationContext.getBean("happyComponent");
+
+        //方案二：根据beanId,同时指定bean的类型Class
+        //applicationContext.getBean("happycomponent", HappyComponent.class).var回车
+
+        HappyComponent happyComponent1 = applicationContext.getBean("happyComponent", HappyComponent.class);
+
+        //方案三：：直接根据类型获取
+        //注意：根据bean类型获取，同一个类型，在ioc容器中只能有一个bean
+        //如果ioc容器存在多个同类型的Bean，会出现：NoUniqueBeanDefinitionException
+        //ioc的配置一定是实现类，但是可以根据接口类型获取值！getBean(类型);instanceof ioc容器的类型==true
+        /*
+        根据类型来获取bean时，在满足bean唯一性的前提下，其实只是看：『对象 instanceof 指定的类型』的返回结果，
+       只要返回的是true就可以认定为和类型匹配，能够获取到。
+        */
+        HappyComponent happyComponent2 = applicationContext.getBean(HappyComponent.class);
+
+        happyComponent2.doWork();
+        System.out.println(happyComponent==happyComponent1);
+        System.out.println(happyComponent2==happyComponent1);
+
+        //运行结果
+        //HappyComponent.doWork
+        //true
+        //true
+    }
+    }
+
+```
+
+```xml
+<!--spring-03.xml-->
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+        <!--组件的信息 ioc的配置-》applicationContext读取了-》实例化对象
+                ioc的配置一定是实现类！真正要进行实例化！
+        -->
+        <bean id="happyComponent" class="org.example.ioc_03.HappyComponent"/>
+</beans>
+```
+
+```java
+package org.example.ioc_03;
+//HappyComponent.java
+public class HappyComponent {
+    //默认包含无参数构造函数
+    public void doWork(){
+        System.out.println("HappyComponent.doWork");
+  
+  }
+}
+```
+
+#### 2.4实验四：高级特性：Bean作用域和周期方法
+
+1.组件周期方法配置
+
+a.周期方法概念：我们可以在组件类中定义方法，然后当IoC容器实例化和销毁组件对象的时候进行调用！这两个方法我们称为生命周期方法！
+
+类似于Servlet的init/destroy方法,我们可以在周期方法完成初始化和释放资源等工作。
+
+b.周期方法声明
+
+```java
+public class JavaBean{
+    //周期方法要求：方法命名随意，但是要求方法必须是public void 无形参列表
+    public void init(){
+        //初始化逻辑
+    }
+    public void clear(){
+        //释放资源逻辑
+    }
+}
+```
+
+c.周期方法配置
+
+```xml
+<!--
+init-method="初始化方法名"
+destory-method="销毁方法名"
+spring ioc容器就会在对应的时间节点回调对应的方法，我们可以在其中写对应的业务就可以啦！
+-->
+<beans>
+    <bean id="javaBean" class="com.atguigu.ioc_04.JavaBean" init-method="init" destory-method="clear"/>
+</beans>
+```
+
+d.test文件
+
+```java
+@Test
+public void test_04(){
+    //1.创建ioc容器，就会进行组件对象的实例化->init
+    ClassPathXmlApplicationContext applicationConetxt=new  ClassPathXmlApplicationContext("spring-04.xml");
     
+    //ioc->容器去调用destory
+    //ioc会立即释放，死了！
+    
+    //2.正常结束ioc容器
+    applicationContext.close();
+}
+```
+
+2.组件作用域配置
+
+a.Bean作用域概念
+
+> `<bean` 标签声明Bean，只是将Bean的信息配置给SpringIoC容器！
+>
+> 在IoC容器中，这些`<bean`标签对应的信息转成Spring内部 `BeanDefinition` 对象，`BeanDefinition` 对象内，包含定义的信息（id,class,属性等等）！
+>
+> 这意味着，`BeanDefinition`与`类`概念一样，SpringIoC容器可以可以根据`BeanDefinition`对象反射创建多个Bean对象实例。
+>
+> 具体创建多少个Bean的实例对象，由Bean的作用域Scope属性指定！
+
+b.作用域可选值
+
+| 取值      | 含义                                        | 创建对象的时机   | 默认值 |
+| --------- | ------------------------------------------- | ---------------- | ------ |
+| singleton | 在 IOC 容器中，这个 bean 的对象始终为单实例 | IOC 容器初始化时 | 是     |
+| prototype | 这个 bean 在 IOC 容器中有多个实例           | 获取 bean 时     | 否     |
+
+如果是在WebApplicationContext环境下还会有另外两个作用域（但不常用）：
+
+| 取值    | 含义                 | 创建对象的时机 | 默认值 |
+| ------- | -------------------- | -------------- | ------ |
+| request | 请求范围内有效的实例 | 每次请求       | 否     |
+| session | 会话范围内有效的实例 | 每次会话       | 否     |
+
+c.作用域配置
+
+配置scope范围
+
+```xml
+<!-- scope属性：取值singleton（默认值），bean在IOC容器中只有一个实例，IOC容器初始化时创建对象 -->
+<!-- scope属性：取值prototype，bean在IOC容器中可以有多个实例，getBean()时创建对象 -->
+<!--声明一个组件信息！默认就是单例模式 一个<bean-beanDefinition-组件对象getBean一次就会创建一个组件对象-->
+<bean id="javaBean2" class="com.atguigu.ioc_04.JavaBean2" scope="singleton"/>
+<bean id="javaBean2" class="com.atguigu.ioc_04.JavaBean2" scope="prototype"/>
+```
+
+d.作用域测试
+
+```java
+@Test
+public void test_04(){
+    //1.创建ioc容器，就会进行组件对象的实例化->init
+    ClassPathXmlApplicationContext applicationConetxt=new  ClassPathXmlApplicationContext("spring-04.xml");
+    
+    //ioc->容器去调用destory
+    //ioc会立即释放，死了！
+    
+    JavaBean2 bean=applicationContext.getBean(JavaBean2.class);
+    JavaBean2 bean1=applicationContext.getBean(JavaBean2.class);
+    System.out.println(bean==bean1);//单例true 多例false
+    
+    //2.正常结束ioc容器
+    applicationContext.close();
+}
+```
+
+#### 2.5实验五：高级特性：FactoryBean特性和使用
+
+FactoryBean简化两种工厂模式,其实也是个组件
+
+FactoryBean是标准化工厂，是个接口，提供了getObject方法，重写这个方法编写自己的实例化逻辑，不像其他工厂一样需要写factory-method="方法名"
+
+```
+<bean id class="工厂类的全限定符即可"/>
+```
+
+1.FactoryBean简介
+
+`FactoryBean` 接口是Spring IoC容器实例化逻辑的可插拔性点。
+
+用于配置复杂的Bean对象，可以将创建过程存储在`FactoryBean` 的getObject方法！
+
+`FactoryBean<T>` 接口提供三种方法：
+
+- `T getObject()`: 
+
+    返回此工厂创建的对象的实例。该返回值会被存储到IoC容器！
+- `boolean isSingleton()`: 
+
+    如果此 `FactoryBean` 返回单例，则返回 `true` ，否则返回 `false` 。此方法的默认实现返回 `true` （注意，lombok插件使用，可能影响效果）。
+- `Class<?> getObjectType()`: 返回 `getObject()` 方法返回的对象类型，如果事先不知道类型，则返回 `null` 。
+
+2.FactoryBean使用场景
+
+1. 代理类的创建
+2. 第三方框架整合
+3. 复杂对象实例化等
+
+3.Factorybean应用
+
+1.准备FactoryBean实现类
+
+```Java
+// 实现FactoryBean接口时需要指定泛型
+// 泛型类型就是当前工厂要生产的对象的类型
+public class HappyFactoryBean implements FactoryBean<HappyMachine> {
+    
+    private String machineName;
+    
+    public String getMachineName() {
+        return machineName;
+    }
+    
+    public void setMachineName(String machineName) {
+        this.machineName = machineName;
+    }
+    
+    @Override
+    public HappyMachine getObject() throws Exception {
+    
+        // 方法内部模拟创建、设置一个对象的复杂过程
+        HappyMachine happyMachine = new HappyMachine();
+    
+        happyMachine.setMachineName(this.machineName);
+    
+        return happyMachine;
+    }
+    
+    @Override
+    public Class<?> getObjectType() {
+    
+        // 返回要生产的对象的类型
+        return HappyMachine.class;
+    }
+}
+```
+2. 配置FactoryBean实现类
+
+```XML
+<!-- FactoryBean机制 -->
+<!-- 这个bean标签中class属性指定的是HappyFactoryBean，但是将来从这里获取的bean是HappyMachine对象 -->
+<!--
+id->getObject方法返回的对象的标识
+Class->factoryBean标准化工厂类
+-->
+<bean id="happyMachine7" class="com.atguigu.ioc.HappyFactoryBean">
+    <!-- property标签仍然可以用来通过setXxx()方法给属性赋值 -->
+    <!--此位置的属性 ：HappyMachine工厂类配置 而不是getObject方法-->
+    <property name="machineName" value="iceCreamMachine"/>
+</bean>
+```
+3. 测试读取FactoryBean和FactoryBean.getObject对象
+
+```Java
+@Test
+public void testExperiment07()  {
+
+    ApplicationContext iocContainer = new ClassPathXmlApplicationContext("spring-bean-07.xml");
+
+    //注意: 直接根据声明FactoryBean的id,获取的是getObject方法返回的对象
+    HappyMachine happyMachine = iocContainer.getBean("happyMachine7",HappyMachine.class);
+    System.out.println("happyMachine = " + happyMachine);
+
+    //如果想要获取FactoryBean对象, 直接在id前添加&符号即可!  &happyMachine7 这是一种固定的约束
+    Object bean = iocContainer.getBean("&happyMachine7");
+    System.out.println("bean = " + bean);
+}
+```
+4.FactoryBean和BeanFactory区别
+
+*********
+
+都是接口
+
+BeanFactory IoC容器最大的接口 IoC容器
+
+FactoryBean 标准化组件工厂的接口 组件
+
+************
+
+**FactoryBean **是 Spring 中一种特殊的 bean，可以在 getObject() 工厂方法自定义的逻辑创建Bean！是一种能够生产其他 Bean 的 Bean。FactoryBean 在容器启动时被创建，而在实际使用时则是通过调用 getObject() 方法来得到其所生产的 Bean。因此，FactoryBean 可以自定义任何所需的初始化逻辑，生产出一些定制化的 bean。
+
+一般情况下，整合第三方框架，都是通过定义FactoryBean实现！！！
+
+**BeanFactory** 是 Spring 框架的基础，其作为一个顶级接口定义了容器的基本行为，例如管理 bean 的生命周期、配置文件的加载和解析、bean 的装配和依赖注入等。BeanFactory 接口提供了访问 bean 的方式，例如 getBean() 方法获取指定的 bean 实例。它可以从不同的来源（例如 Mysql 数据库、XML 文件、Java 配置类等）获取 bean 定义，并将其转换为 bean 实例。同时，BeanFactory 还包含很多子类（例如，ApplicationContext 接口）提供了额外的强大功能。
+
+总的来说，FactoryBean 和 BeanFactory 的区别主要在于前者是用于创建 bean 的接口，它提供了更加灵活的初始化定制功能，而后者是用于管理 bean 的框架基础接口，提供了基本的容器功能和 bean 生命周期管理。
+
+#### 2.6实验六：基于XML方式整合三层架构组件
+
+java代码包括获取对象（全局变量和set方法）和适用对象，然后配置，然后IoC容器
+
+1.需求分析：
+
+搭建一个三层架构案例，模拟查询全部学生（学生表）信息，持久层使用JdbcTemplate和Druid技术，使用XML方式进行组件管理！![img](https://secure2.wostatic.cn/static/dMe3en4EMVQ5JEi3PVDjae/image.png?auth_key=1699169845-tirckEDTZXWxRksJxm4MEo-0-9ed98a1292a98689a376eedbec088b23&file_size=78180)
+
+> XML（可扩展标记语言）是一种用于描述数据结构和传输数据的标记语言。它被广泛应用于各种领域，包括Web开发、数据交换和配置文件等。在软件开发中，XML常用于定义和组织应用程序的配置信息、数据模型和其他结构化数据。
+>
+> 在上述三层架构案例中，XML方式被用于组件管理。组件管理是指通过配置文件来管理应用程序中的组件（例如，持久层的实现类、业务逻辑层的实现类等）。使用XML方式进行组件管理的好处是可以将组件的创建、依赖关系和配置信息集中在一个配置文件中，提供了更灵活和可维护的方式来管理应用程序的组件。
+>
+> 在这个案例中，XML文件可以用于定义以下内容：
+>
+> 1. 数据库连接信息：可以在XML文件中定义数据库的连接URL、用户名、密码等信息，以供持久层组件使用。
+> 2. 组件的配置信息：可以在XML文件中定义各个组件的配置信息，例如持久层组件JdbcTemplate和Druid的配置信息，以及其他相关的配置项。
+> 3. 组件的依赖关系：可以在XML文件中定义各个组件之间的依赖关系，例如业务逻辑层组件依赖于持久层组件，在XML文件中进行配置。
+>
+> 通过使用XML方式进行组件管理，可以实现对应用程序的组件进行集中管理，并且可以根据需要进行灵活的配置和调整。
+
+持久层
+
+> 持久层（Persistence Layer）是指在软件系统中负责处理数据持久化的一层。它负责将应用程序的数据存储到持久存储介质（如数据库、文件系统等）中，并提供数据的读取、写入、更新和删除等操作。
+>
+> 持久层组件是在三层架构中的其中一层，通常位于业务逻辑层和数据访问层之间。它的主要功能是处理数据的持久化操作，包括与数据库的交互、数据的增删改查等。
+>
+> 在软件开发中，常用的持久层组件包括对象关系映射（ORM）框架、数据库访问框架等。这些组件提供了简化数据库操作的接口和功能，使开发人员可以更方便地进行数据库操作，而无需直接编写SQL语句。
+>
+> 在您的案例中，持久层组件使用了JdbcTemplate和Druid技术。JdbcTemplate是Spring框架提供的一个用于简化JDBC编程的工具类，它封装了JDBC的底层细节，提供了更简洁的API来执行SQL查询和更新操作。Druid是一种高性能的数据库连接池技术，它可以提供连接池管理、监控和优化等功能，用于管理数据库连接的创建和释放。
+>
+> 通过使用JdbcTemplate和Druid等持久层组件，可以简化数据库操作的代码编写，并提供高效、可靠的数据库访问功能。
+
+2.数据库准备
+
+```java
+create database studb;
+
+use studb;
+
+CREATE TABLE students (
+  id INT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL,
+  gender VARCHAR(10) NOT NULL,
+  age INT,
+  class VARCHAR(50)
+);
+
+INSERT INTO students (id, name, gender, age, class)
+VALUES
+  (1, '张三', '男', 20, '高中一班'),
+  (2, '李四', '男', 19, '高中二班'),
+  (3, '王五', '女', 18, '高中一班'),
+  (4, '赵六', '女', 20, '高中三班'),
+  (5, '刘七', '男', 19, '高中二班'),
+  (6, '陈八', '女', 18, '高中一班'),
+  (7, '杨九', '男', 20, '高中三班'),
+  (8, '吴十', '男', 19, '高中二班');
+
+```
+
+3.项目准备
+
+a.项目创建
+
+spring-ioc-xml-practice-02
+
+b.依赖导入
+
+```xml
+<!--  ssm-spring-part  pomm.xml-->
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.example</groupId>
+    <artifactId>ssm-spring-part</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>spring-ioc-xml-01</module>
+        <module>spring-ioc-xml-practice-02</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!--spring context依赖-->
+        <!--当你引入Spring Context依赖之后，表示将Spring的基础依赖引入了-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>6.0.6</version>
+        </dependency>
+        <!--junit5测试-->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.3.1</version>
+        </dependency>
+        <!-- 数据库驱动和连接池-->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.25</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.2.8</version>
+        </dependency>
+
+        <!-- spring-jdbc -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>6.0.6</version>
+        </dependency>
+
+    </dependencies>
+
+</project>
+```
+
+c.实体类准备
+
+```java
+//Student.java
+package org.example.pojo;
+
+public class Student {
+
+    private Integer id;
+    private String name;
+    private String gender;
+    private Integer age;
+    private String classes;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public String getClasses() {
+        return classes;
+    }
+
+    public void setClasses(String classes) {
+        this.classes = classes;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", gender='" + gender + '\'' +
+                ", age=" + age +
+                ", classes='" + classes + '\'' +
+                '}';
+    }
+}
+
+```
+
+4.JdbcTemplate技术讲解
+
+为了在特定领域帮助我们简化代码，Spring封装了很多【Template】形式的模板类，例如：RedisTemplate、RestTemplate、等等，包括我们今天要学习的JdbcTemplate
+
+main->resources->jdbc.properties  提取数据库连接信息
+
+```properties
+atguigu.url=jdbc:mysql://localhost:3306/studb
+atguigu.driver=com.mysql.cj.jdbc.Driver
+atguigu.username=root
+atguigu.password=40111004
+```
+
+springioc配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!--方案二-->
+    <!--读取外部配置文件 .properties =>value ="${key}"
+       <context:property-placeholder location="classpath:jdbc.properties,classpath:其他配置，可以添加多个外部配置" />
+       -->
+    <context:property-placeholder location="classpath:jdbc.properties" />
+
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="url" value="${atguigu.url}"/>
+        <property name="driverClassName" value="${atguigu.driver}"/>
+        <property name="username" value="${atguigu.username}"/>
+        <property name="password" value="${atguigu.password}"/>
+    </bean>
+
+    <!-- 方案一
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="url" value="jdbc:mysql:///studb"/>
+        <property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
+        <property name="username" value="root"/>
+        <property name="password" value="40111004"/>
+     </bean>
+     -->
+
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    
+</beans>
+```
+
+基于jdbcTemplate的CRUD使用
+
+```java
+package org.example.jdbc;
+
+import com.alibaba.druid.pool.DruidDataSource;
+import org.example.pojo.Student;
+import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+//测试javaTemplateTest如何使用
+public class JdbcTemplateTest {
+    public void testForJava() {
+
+        //JdbcTemplate 简化数据库的增删改查 不提供连接池
+        //DruidDataSource 负责连接的创建和数据库驱动的注册等等
+
+        //0.创建一个连接池对象
+        DruidDataSource  dataSource=new DruidDataSource();
+        dataSource.setUrl("jdbc:mysql:///studb");//url地址
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");//jdbc驱动
+        dataSource.setUsername("root");//账号
+        dataSource.setPassword("40111004");//密码
+
+        //1.实例化对象即可
+        JdbcTemplate jdbcTemplate = new JdbcTemplate();
+
+        jdbcTemplate.setDataSource(dataSource);
+
+        //2.调用方法即可
+        //jdbcTemplate.update() DDL DML DCL ...非查询语句
+        //jdbcTemplate.queryForObject() DQL 查询单个对象
+        //jdbcTemplate.query() DQL查询集合
+    }
+
+
+
+    //通过ioc容器读取配置的JdbcTemplate组件
+    @Test
+    public void testForIoC()
+    {
+        //1.创建ioc容器
+        ApplicationContext applicationContext=new ClassPathXmlApplicationContext("spring-01.xml");
+        //2.获取jdbcTemplate组件
+        JdbcTemplate jdbcTemplate=applicationContext.getBean(JdbcTemplate.class);
+
+        //3.进行数据库的curd动作增删改查
+        //3.1插入 删除和修改DML updata
+        String sql="insert into students(id,name,gender,age,class) values(?,?,?,?,?)";
+        //参数1：String sql可以带占位符？ ？只能替代值 不能替代关键字和容器名
+        //参数二：Object...param 传入占位符的值 顺序 从左开始对象
+        //返回值：int 影响函数
+
+        int rows=jdbcTemplate.update(sql,9,"二狗子","男",18,"三年二班");
+        System.out.println("rows="+rows);
+
+        //3.2查询单条数据
+        //根据id查询学生数据 返回一个对应的实体对象
+        sql="select* from students where id=?;";
+        /*
+        参数一：sql语句 可以使用?
+        参数二：RowMapper 列名很多属性名的映射器接口
+        参数三：Object...param 可以变参数 占位符的值
+        返回值：rowMapper指定的对象
+         */
+        Student student1 = jdbcTemplate.queryForObject(sql, new RowMapper<Student>() {
+
+            @Override
+            public Student mapRow(ResultSet rs, int rowNum) throws SQLException {
+                //rs结果集
+                //rowNum 行数
+                //rs结果集中获取列的值 赋值给实体类对象即可.
+                Student student = new Student();
+                student.setId(rs.getInt("id"));
+                student.setName(rs.getString("name"));
+                student.setGender(rs.getString("gender"));
+                student.setAge(rs.getInt("age"));
+                student.setClasses(rs.getString("class"));
+                return student;
+
+
+            }
+        }, 1);
+        System.out.println("student1 = " + student1);
+
+        //3.3查询所有学生的数据
+        sql="select id,name,gender,age,class as classes from students;";
+
+        //TODO:BeanPropertyRowMapper帮助我们自动映射列和属性值！要求列名和属性名一致！不一致 起别名！
+        List<Student> studentList=jdbcTemplate.query(sql,new BeanPropertyRowMapper<Student>(Student.class));
+        System.out.println("studentList="+ studentList);
+
+    }
+}
+
+```
+
+5.三层架构搭建和实现
+
+![image-20231105182327996](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231105182327996.png)
+
+a.持久层
+
+```java
+package org.example.dao;
+
+import org.example.pojo.Student;
+
+import java.util.List;
+
+public interface StudentDao {
+    //查询全部学生数据
+    List<Student> queryAll();
+}
+
+```
+
+```java
+package org.example.dao.impl;
+
+import org.example.dao.StudentDao;
+import org.example.pojo.Student;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.util.List;
+
+public class StudentDaoImpl implements StudentDao {
+    private JdbcTemplate jdbcTemplate;
+    //注入我们的jdbcTemplate对象
+    public void setJdbcTemplate(JdbcTemplate jdbcTemplate)
+    {
+        this.jdbcTemplate=jdbcTemplate;
+    }
+
+    //查询全部学生数据
+
+    @Override
+    public List<Student> queryAll() {
+        String sql="select id,name,age,gender,class as classes from students;";
+
+        //query可以返回集合！
+        //BeanPropertyRowMapper就是封装好RowMapper的实现，要求属性名和列名相同即可‘
+        List<Student> studentList=jdbcTemplate.query(sql,new BeanPropertyRowMapper<>(Student.class));
+
+        return studentList;
+    }
+}
+
+```
+
+b.业务层
+
+```java
+package org.example.service;
+
+import org.example.pojo.Student;
+
+import java.util.List;
+
+public interface StudentService {
+    //查询全部学员业务
+    List<Student> findAll();
+}
+
+```
+
+```java
+package org.example.service.impl;
+
+import org.example.dao.StudentDao;
+import org.example.pojo.Student;
+import org.example.service.StudentService;
+
+import java.util.List;
+
+public class StudentServiceImpl implements StudentService {
+
+    private StudentDao studentDao;
+    public void setStudentDao(StudentDao studentDao)
+    {
+        this.studentDao=studentDao;
+    }
+    //查询全部学员业务
+    @Override
+    public List<Student> findAll() {
+        List<Student> studentList=studentDao.queryAll();
+        return studentList;
+    }
+}
+
+```
+
+c.表述层
+
+```java
+package org.example.controller;
+
+import org.example.pojo.Student;
+import org.example.service.StudentService;
+
+import java.util.List;
+
+public class StudentController {
+    private StudentService studentService;
+    public void setStudentService(StudentService studentService)
+    {
+        this.studentService=studentService;
+    }
+    public void findAll()
+    {
+        List<Student> studentList=studentService.findAll();
+        System.out.println("studentList="+studentList);
+    }
+}
+
+```
+
+6.三层架构IoC配置
+
+```xml
+<!--spring-02.xml-->
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!--导入外部属性文件-->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <!--配置数据源-->
+    <bean id="druidDataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="url" value="${atguigu.url}"/>
+        <property name="driverClassName" value="${atguigu.driver}"/>
+        <property name="username" value="${atguigu.username}"/>
+        <property name="password" value="${atguigu.password}"/>
+    </bean>
+
+    <!--配置JdbcTemplate-->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <!--装配数据源-->
+        <property name="dataSource" ref="druidDataSource"/>
+    </bean>
+
+    <bean id="studentDao" class="org.example.dao.impl.StudentDaoImpl">
+        <property name="jdbcTemplate" ref="jdbcTemplate"/>
+    </bean>
+
+    <bean id="studentService" class="org.example.service.impl.StudentServiceImpl">
+        <property name="studentDao" ref="studentDao"/>
+    </bean>
+
+    <bean id="studentController" class="org.example.controller.StudentController">
+        <property name="studentService" ref="studentService"/>
+    </bean>
+</beans>
+```
+
+7.运行测试
+
+```java
+
+public class JdbcTemplateTest {//从ioc容器中获取controller并且调用业务！内部都是ioc容器进行组装
+    @Test
+    public void testQueryAll()
+    {
+        //创建ioc容器
+        ClassPathXmlApplicationContext applicationContext=new ClassPathXmlApplicationContext("spring-02.xml");
+        //获取组件对象
+        StudentController studentController=applicationContext.getBean(StudentController.class);
+        //使用组件对象
+        studentController.findAll();
+        //关闭容器
+       // applicationContext.close();
+    }
+    }
+```
+
+```
+运行结果
+
+studentList=[Student{id=1, name='张三', gender='男', age=20, classes='高中一班'}, Student{id=2, name='李四', gender='男', age=19, classes='高中二班'}, Student{id=3, name='王五', gender='女', age=18, classes='高中一班'}, Student{id=4, name='赵六', gender='女', age=20, classes='高中三班'}, Student{id=5, name='刘七', gender='男', age=19, classes='高中二班'}, Student{id=6, name='陈八', gender='女', age=18, classes='高中一班'}, Student{id=7, name='杨九', gender='男', age=20, classes='高中三班'}, Student{id=8, name='吴十', gender='男', age=19, classes='高中二班'}, Student{id=9, name='二狗子', gender='男', age=18, classes='三年二班'}]
+```
+
+8.XMLIoC方式问题总结
+
+<font color=red>a.注入的属性必须添加setter方法，代码结构混乱</font>
+
+<font color=red>b.配置文件和Java代码分离，编写不是很方便</font>
+
+<font color=red>c.XML配置文件解析效率低</font>
+
+
+
