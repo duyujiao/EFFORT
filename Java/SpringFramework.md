@@ -1915,3 +1915,26 @@ public class SoldierService {
     1. 注解方式IoC只是标记哪些类要被Spring管理
     2. 最终，我们还需要XML方式或者后面讲解Java配置类方式指定注解生效的包
     3. **现阶段配置方式为 注解 （标记）+ XML（扫描）**
+
+#### 3.2实验二：组件（Bean)作用域和周期方法注解
+
+周期方法声明和作用域配置
+
+```java
+@Scope(scopeName = ConfigurableBeanFactory.SCOPE_SINGLETON) //单例,默认值
+@Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE) //多例  二选一
+public class JavaBean{
+    //周期方法要求:方法命名随意，但是要求方法必须是public void 无形参列表
+    @PostConstruct//注解指定初始化方法
+    public void init()
+    {
+        //初始化逻辑
+    }
+    
+    @PreDestory//注解指定销毁方法
+    public void clear(){
+        //释放资源逻辑
+    }
+}
+```
+
