@@ -1564,7 +1564,7 @@ public class StudentServiceImpl implements StudentService {
     private StudentDao studentDao;
     public void setStudentDao(StudentDao studentDao)
     {
-        this.studentDao=studentDao;
+        this.studentDao=studentDao; 
     }
     //查询全部学员业务
     @Override
@@ -1938,3 +1938,328 @@ public class JavaBean{
 }
 ```
 
+#### 3.3Bean属性赋值：引用类型自动装配（DI）
+
+1. **设定场景**
+    - SoldierController 需要 SoldierService
+    - SoldierService 需要 SoldierDao
+
+      同时在各个组件中声明要调用的方法。
+
+    - SoldierController中声明方法
+
+```Java
+import org.springframework.stereotype.Controller;
+
+@Controller(value = "tianDog")
+public class SoldierController {
+
+    private SoldierService soldierService;
+
+    public void getMessage() {
+        soldierService.getMessage();
+    }
+
+}
+```
+- SoldierService中声明方法
+
+```Java
+@Service("smallDog")
+public class SoldierService {
+
+    private SoldierDao soldierDao;
+
+    public void getMessage() {
+        soldierDao.getMessage();
+    }
+}
+```
+- SoldierDao中声明方法
+
+```Java
+@Repository
+public class SoldierDao {
+
+    public void getMessage() {
+        System.out.print("I am a soldier");
+    }
+
+}
+```
+2. **自动装配实现**
+    1. 前提
+
+        参与自动装配的组件（需要装配、被装配）全部都必须在IoC容器中。
+
+        注意：不区分IoC的方式！XML和注解都可以！
+    2. @Autowired注解
+
+        在成员变量上直接标记@Autowired注解即可，不需要提供setXxx()方法。以后我们在项目中的正式用法就是这样。
+    3. 给Controller装配Service
+
+```Java
+@Controller(value = "tianDog")
+public class SoldierController {
+    
+    @Autowired
+    private SoldierService soldierService;
+    
+    public void getMessage() {
+        soldierService.getMessage();
+    }
+    
+}
+```
+4. 给Service装配Dao
+
+```Java
+@Service("smallDog")
+public class SoldierService {
+    
+    @Autowired
+    private SoldierDao soldierDao;
+    
+    public void getMessage() {
+        soldierDao.getMessage();
+    }
+}
+```
+3. **@Autowired注解细节**
+    1. 标记位置
+        1. 成员变量
+
+            这是最主要的使用方式！
+
+            与xml进行bean ref引用不同，他不需要有set方法！
+
+```Java
+@Service("smallDog")
+public class SoldierService {
+    
+    @Autowired
+    private SoldierDao soldierDao;
+    
+    public void getMessage() {
+        soldierDao.getMessage();
+    }
+}
+```
+​    2. 构造器
+
+```Java
+@Controller(value = "tianDog")
+public class SoldierController {
+    
+    private SoldierService soldierService;
+    
+    @Autowired
+    public SoldierController(SoldierService soldierService) {
+        this.soldierService = soldierService;
+    }
+    ……
+```
+​    3. setXxx()方法
+
+```Java
+@Controller(value = "tianDog")
+public class SoldierController {
+
+    private SoldierService soldierService;
+
+    @Autowired
+    public void setSoldierService(SoldierService soldierService) {
+        this.soldierService = soldierService;
+    }
+    ……
+```
+2. 工作流程
+
+    ![](http://heavy_code_industry.gitee.io/code_heavy_industry/assets/img/img018.2ff0ae09.png)
+
+    - 首先根据所需要的组件类型到 IOC 容器中查找
+        - 能够找到唯一的 bean：直接执行装配
+        - 如果完全找不到匹配这个类型的 bean：装配失败
+        - 和所需类型匹配的 bean 不止一个
+            - 没有 @Qualifier 注解：根据 @Autowired 标记位置成员变量的变量名作为 bean 的 id 进行匹配
+                - 能够找到：执行装配
+                - 找不到：装配失败
+            - 使用 @Qualifier 注解：根据 @Qualifier 注解中指定的名称作为 bean 的id进行匹配
+                - 能够找到：执行装配
+                - 找不到：装配失败
+
+```Java
+@Controller(value = "tianDog")
+public class SoldierController {
+    
+    @Autowired
+    @Qualifier(value = "maomiService222")
+    // 根据面向接口编程思想，使用接口类型引入Service组件
+    private ISoldierService soldierService;
+```
+4. **佛系装配**
+
+    给 @Autowired 注解设置 required = false 属性表示：能装就装，装不上就不装。但是实际开发时，基本上所有需要装配组件的地方都是必须装配的，用不上这个属性
+
+```Java
+@Controller(value = "tianDog")
+public class SoldierController {
+
+    // 给@Autowired注解设置required = false属性表示：能装就装，装不上就不装
+    @Autowired(required = false)
+    private ISoldierService soldierService;
+```
+5. **扩展JSR-250注解@Resource**
+    - 理解JSR系列注解
+
+        JSR（Java Specification Requests）是Java平台标准化进程中的一种技术规范，而JSR注解是其中一部分重要的内容。按照JSR的分类以及注解语义的不同，可以将JSR注解分为不同的系列，主要有以下几个系列：
+
+        1. JSR-175: 这个JSR是Java SE 5引入的，是Java注解最早的规范化版本，Java SE 5后的版本中都包含该JSR中定义的注解。主要包括以下几种标准注解：
+        - `@Deprecated`: 标识一个程序元素（如类、方法或字段）已过时，并且在将来的版本中可能会被删除。
+        - `@Override`: 标识一个方法重写了父类中的方法。
+        - `@SuppressWarnings`: 抑制编译时产生的警告消息。
+        - `@SafeVarargs`: 标识一个有安全性警告的可变参数方法。
+        - `@FunctionalInterface`: 标识一个接口只有一个抽象方法，可以作为lambda表达式的目标。
+        1. JSR-250: 这个JSR主要用于在Java EE 5中定义一些支持注解。该JSR主要定义了一些用于进行对象管理的注解，包括：
+        - `@Resource`: 标识一个需要注入的资源，是实现Java EE组件之间依赖关系的一种方式。
+        - `@PostConstruct`: 标识一个方法作为初始化方法。
+        - `@PreDestroy`: 标识一个方法作为销毁方法。
+        - `@Resource.AuthenticationType`: 标识注入的资源的身份验证类型。
+        - `@Resource.AuthenticationType`: 标识注入的资源的默认名称。
+        1. JSR-269: 这个JSR主要是Java SE 6中引入的一种支持编译时元数据处理的框架，即使用注解来处理Java源文件。该JSR定义了一些可以用注解标记的注解处理器，用于生成一些元数据，常用的注解有：
+        - `@SupportedAnnotationTypes`: 标识注解处理器所处理的注解类型。
+        - `@SupportedSourceVersion`: 标识注解处理器支持的Java源码版本。
+        1. JSR-330: 该JSR主要为Java应用程序定义了一个依赖注入的标准，即Java依赖注入标准（javax.inject）。在此规范中定义了多种注解，包括：
+        - `@Named`: 标识一个被依赖注入的组件的名称。
+        - `@Inject`: 标识一个需要被注入的依赖组件。
+        - `@Singleton`: 标识一个组件的生命周期只有一个唯一的实例。
+        1. JSR-250: 这个JSR主要是Java EE 5中定义一些支持注解。该JSR包含了一些支持注解，可以用于对Java EE组件进行管理，包括：
+        - `@RolesAllowed`: 标识授权角色
+        - `@PermitAll`: 标识一个活动无需进行身份验证。
+        - `@DenyAll`: 标识不提供针对该方法的访问控制。
+        - `@DeclareRoles`: 声明安全角色。
+
+        但是你要理解JSR是Java提供的**技术规范**，也就是说，他只是规定了注解和注解的含义，**JSR并不是直接提供特定的实现**，而是提供标准和指导方针，由第三方框架（Spring）和库来实现和提供对应的功能。
+    - JSR-250 @Resource注解
+
+        @Resource注解也可以完成属性注入。那它和@Autowired注解有什么区别？
+
+        - @Resource注解是JDK扩展包中的，也就是说属于JDK的一部分。所以该注解是标准注解，更加具有通用性。(JSR-250标准中制定的注解类型。JSR是Java规范提案。)
+        - @Autowired注解是Spring框架自己的。
+        - **@Resource注解默认根据Bean名称装配，未指定name时，使用属性名作为name。通过name找不到的话会自动启动通过类型装配。**
+        - **@Autowired注解默认根据类型装配，如果想根据名称装配，需要配合@Qualifier注解一起用。**
+        - @Resource注解用在属性上、setter方法上。
+        - @Autowired注解用在属性上、setter方法上、构造方法上、构造方法参数上。
+
+        @Resource注解属于JDK扩展包，所以不在JDK当中，需要额外引入以下依赖：【**高于JDK11或低于JDK8需要引入以下依赖**】
+
+```XML
+<dependency>
+    <groupId>jakarta.annotation</groupId>
+    <artifactId>jakarta.annotation-api</artifactId>
+    <version>2.1.1</version>
+</dependency>
+```
+- @Resource使用
+
+```Java
+@Controller
+public class XxxController {
+    /**
+     * 1. 如果没有指定name,先根据属性名查找IoC中组件xxxService
+     * 2. 如果没有指定name,并且属性名没有对应的组件,会根据属性类型查找
+     * 3. 可以指定name名称查找!  @Resource(name='test') == @Autowired + @Qualifier(value='test')
+     */
+    @Resource
+    private XxxService xxxService;
+
+    //@Resource(name = "指定beanName")
+    //private XxxService xxxService;
+
+    public void show(){
+        System.out.println("XxxController.show");
+        xxxService.show();
+    }
+}
+```
+
+#### 3.4 实验四： Bean属性赋值：基本类型属性赋值 (DI)
+
+  `@Value` 通常用于注入外部化属性
+
+  **声明外部配置**
+
+  application.properties
+
+```Java
+catalog.name=MovieCatalog
+```
+
+  **xml引入外部配置**
+
+```Java
+<!-- 引入外部配置文件-->
+<context:property-placeholder location="application.properties" />
+```
+
+  **@Value注解读取配置**
+
+```Java
+package com.atguigu.components;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+/**
+ * projectName: com.atguigu.components
+ *
+ * description: 普通的组件
+ */
+@Component
+public class CommonComponent {
+
+    /**
+     * 情况1: ${key} 取外部配置key对应的值!
+     * 情况2: ${key:defaultValue} 没有key,可以给与默认值
+     */
+    @Value("${catalog:hahaha}")
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+
+```
+
+#### 3.5基于注解+xml方式整合三层架构组件
+
+##### 小结
+
+**注解标识（IoC,DI)**
+
+1.ioc注解-----@Component    <bean id class=>,@Controller,@Service,@Repository
+
+2.DI注解------其他的bean  引用类型- @Resource(name="beanid")=@Autowired+@Qualifier(value="beanid")
+
+基本类型-@Value(${key:value})         对比xml方式，不用set方法
+
+@Component FactoryBean
+
+**配置文件**
+
+1.扫描：<context:component-scan basepackage="包，包"
+
+2.引入外部的配置文件：<context:property-placeholder location="classpath:xx.pro">
+
+3.第三方的类的ioc和DI配置   比如JdbcTemplate   .jar默认只读
+
+<bean id class="第三方类"
+
+<property name value ref
+
+4.基于配置类方式管理
