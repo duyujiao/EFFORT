@@ -2262,4 +2262,160 @@ public class CommonComponent {
 
 <property name value ref
 
-4.基于配置类方式管理
+### 4.基于配置类方式管理
+
+#### 4.1完全注解开发理解
+
+![img](https://secure2.wostatic.cn/static/uhRgky6LmFBAaYDJfS5SEm/image.png?auth_key=1699512490-ajTd3wEQBUJskwJVjN5vdn-0-c7ffb3ec7ca064d2a149d919249409d8&file_size=101302)
+
+#### 4.2配置类和扫描注解
+
+@Configuration指定一个类为配置类，可以添加配置注解，代替配置xml文件
+
+@ComponentScan(basePackages={"包"，"包"})替代<context:component-scan标签实现注解扫描
+
+@PropertySource("classpath：配置文件地址")替代<context:property-placeholder标签
+
+配合IoC/DI注解，可以进行完整注解开发
+
+#### 4.3@Bean定义组件
+
+第三方jar包的类
+
+> <bean-  > 一个方法
+>
+> 方法的返回值类型==bean组件的类型或者其他的接口和父类
+>
+> 方法的名字=bean id
+>
+> 方法体可以自定义实现过程即可
+>
+> 最重要的一步：@Bean 会真正让配置类的方法创建的组件存储到ioc容器
+
+#### 4.4@Bean注解细节
+
+问题一：beanName的问题
+
+默认：方法名
+
+指定：name/value属性起名字，覆盖方法名  @Bean(name="ergouzi")
+
+问题二：周期方法如何指定
+
+原有注解方案：PostConstruct+PreDestory直接指定
+
+bean属性指定：initMethod/destoryMethod指定
+
+问题三：作用域
+
+和以前还是一样@Scope注解，默认是单例
+
+问题四：如何引用其他的ioc组件
+
+直接调用对方的bean方法即可
+
+直接形参变量进行引入，要求必须有对应的组件，如果有多个，形参名=组件id标识即可
+
+#### 4.5@Import扩展
+
+有JavaConfigurationA和JavaConfigurationB
+
+简化了容器实例化，因为只需要处理一个类，而不是要求您在构造期间记住可能大量的 @Configuration 类。
+
+在JavaConfigurationA中加上注解@Import(value={JavaConfigurationB.class})
+
+#### 4.6配置类案例--总结
+
+配置类：
+
+1.配置类的作用，完全注解开发替代xml文件
+
+替代扫描标签--》注解
+
+引用外部配置标签--》注解
+
+替代<bean -》注解
+
+2.注解
+
+如何声明配置类@Configuration
+
+如何扫描包注解@ComponentScan
+
+如何引用外部配置@PropertySource
+
+如何声明bean @Bean--》方法
+
+3.配置类对应的容器
+
+ClasspathXml...AnnotationConfig...
+
+### 5三种配置方式总结
+
+ XML方式配置总结
+
+    1. 所有内容写到xml格式配置文件中
+    2. 声明bean通过<bean标签
+    3. <bean标签包含基本信息（id,class）和属性信息 <property name value / ref
+    4. 引入外部的properties文件可以通过<context:property-placeholder
+    5. IoC具体容器实现选择ClassPathXmlApplicationContext对象
+
+XML+注解方式配置总结
+
+    1. 注解负责标记IoC的类和进行属性装配
+    2. xml文件依然需要，需要通过<context:component-scan标签指定注解范围
+    3. 标记IoC注解：@Component,@Service,@Controller,@Repository 
+    4. 标记DI注解：@Autowired @Qualifier @Resource @Value
+    5. IoC具体容器实现选择ClassPathXmlApplicationContext对象
+
+ 完全注解方式配置总结
+
+    1. 完全注解方式指的是去掉xml文件，使用配置类 + 注解实现
+    2. xml文件替换成使用@Configuration注解标记的类
+    3. 标记IoC注解：@Component,@Service,@Controller,@Repository 
+    4. 标记DI注解：@Autowired @Qualifier @Resource @Value
+    5. <context:component-scan标签指定注解范围使用@ComponentScan(basePackages = {"com.atguigu.components"})替代
+    6. <context:property-placeholder引入外部配置文件使用@PropertySource({"classpath:application.properties","classpath:jdbc.properties"})替代
+    7. <bean 标签使用@Bean注解和方法实现
+    8. IoC具体容器实现选择AnnotationConfigApplicationContext对象
+
+### 6整合Spring5-Test5搭建测试环境
+
+整合测试环境作用
+
+不需要自己创建IoC容器和任何需要的bean都可以在测试类中直接享受自动装配
+
+导入依赖
+
+```xml
+<!--junit5测试-->
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter-api</artifactId>
+    <version>5.3.1</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-test</artifactId>
+    <version>6.0.6</version>
+    <scope>test</scope>
+</dependency>
+```
+
+整合测试注解使用
+
+```java
+//@SpringJUnitConfig(locations = {"classpath:spring-context.xml"})  //指定配置文件xml
+@SpringJUnitConfig(value = {BeanConfig.class})  //指定配置类
+public class Junit5IntegrationTest {
+    
+    @Autowired
+    private User user;
+    
+    @Test
+    public void testJunit5() {
+        System.out.println(user);
+    }
+}
+```
+
