@@ -2419,3 +2419,99 @@ public class Junit5IntegrationTest {
 }
 ```
 
+## 五、Spring AOP面向切面的编程
+
+### 1.代理模式
+
+静态代理和动态代理（JDK动态代理和cglib）
+
+jdk生成代理对象
+
+> return Proxy.newProxyInstance(classLoader,interfaces,invocationHardler);  
+>
+> 参数一：类加载器
+>
+> 参数二:目标类的接口们
+>
+> 参数三：具体要进行的代理动作[非核心动作- 调用目标方法]
+
+反正都很麻烦，所以使用Spring AOP框架，简化动态代理的实现
+
+### 2.面向切面编程思想
+
+![image-20231111140511542](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231111140511542.png)
+
+AOP 提取非核心业务组成日志代码通过代理技术分到每个方法中
+
+AOP是OOP的完善和补充。AOP是面向切面编程，横向的编程思维，将代码中重复的非核心业务提取到一个公共模块！最终在利用动态代理技术横向插入到各个方法中！解决非核心代码沉余问题就是相同代码在好多方法中都有
+
+### 3.AOP的8个核心名词理解
+
+![image-20231111135657706](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231111135657706.png)
+
+### 4.Spring AOP基于注解方式实现和细节
+
+#### 4.1初步实现
+
+![image-20231111142417438](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231111142417438.png)
+
+#### 4.2获取通知细节
+
+1.全部增强方法中，获取目标方法的信息(方法名，参数，访问修饰符，所属类的信息)
+
+(JoinPoint joinpoint)
+
+2.返回的结果-@AfterReturning
+
+(Object result)result接收返回结果
+
+```
+@AfterReturning("execution(* org.example.service.impl.*.*(..))",returning="形参名即可")
+```
+
+3.异常信息-@AfterThrowing
+
+(Throwable t)t接受异常信息
+
+```
+@AfterThrowing("execution(* org.example.service.impl.*.*(..))"，throwing="形参名即可")
+```
+
+#### 4.3切点表达式语法
+
+![image-20231111163851752](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231111163851752.png)
+
+![image-20231111164730575](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231111164730575.png)
+
+### 5.Spring AOP基于XML方式实现和细节
+
+![image-20231111172138845](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231111172138845.png)
+
+## 六、Spring声明式事务
+
+![image-20231111174606888](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231111174606888.png)
+
+### 基于注解的声明式事务
+
+![image-20231111205035149](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231111205035149.png)
+
+事务超时时间设置
+
+默认：永远不超时 -1
+
+设置：timeout=时间 描述 超过时间，就会回滚事务和释放异常！TransactionTimeOutException
+
+如果类上设置事务属性，方法也设置了事务注解！方法会不会生效？答案是：不会生效
+
+不会生效：方法上的注解覆盖了类上的注解
+
+## 七、总结
+
+|                 |                                                    |
+| --------------- | -------------------------------------------------- |
+| 核心点          | 掌握目标                                           |
+| spring框架理解  | spring家族和spring framework框架                   |
+| spring核心功能  | ioc/di , aop , tx                                  |
+| spring ioc / di | 组件管理、ioc容器、ioc/di , 三种配置方式           |
+| spring aop      | aop和aop框架和代理技术、基于注解的aop配置          |
+| spring tx       | 声明式和编程式事务、动态事务管理器、事务注解、属性 |
