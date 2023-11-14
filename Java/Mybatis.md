@@ -61,7 +61,7 @@ xxx(columnName,columnValue)
 
 sql select * from 表 where 列名是动态的${columnName}=动态的值#{columnValue}
 
-### 2.简单类型传入
+#### 1.1.数据输入-简单类型传入
 
 传入的单个简单类型 key随便写 一般情况下推荐使用参数名！！！
 
@@ -69,7 +69,7 @@ sql select * from 表 where 列名是动态的${columnName}=动态的值#{column
 
 ![image-20231113222145623](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231113222145623.png)
 
-### 3.单个实体对象传入
+#### 1.2.单个实体对象传入
 
 传入的是一个实体对象key写法    key=属性名即可！！！
 
@@ -77,7 +77,7 @@ sql select * from 表 where 列名是动态的${columnName}=动态的值#{column
 
 ![image-20231113222508511](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231113222508511.png)
 
-### 4.多个简单类型传入
+#### 1.3.多个简单类型传入
 
 传入多个简单类型数据如何取值key!  不可以随便写，按照形参名称也不可以
 
@@ -101,7 +101,7 @@ param1 param2...       (name,salary) name->param1    salary->param2
 
 ③![image-20231113223504729](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231113223504729.png)
 
-### 5.map类型传入
+#### 1.4map类型传入
 
 传入map 如何指定key的值
 
@@ -110,3 +110,172 @@ key=map的key即可
 ![image-20231113223908160](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231113223908160.png)
 
 ![image-20231113223918217](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231113223918217.png)
+
+### 2.数据输出
+
+#### 2.1单个简单类型和定义别名
+
+返回i单个简单类型如何指定？ resultType的写法！返回值的数据类型！！
+
+resultType语法：
+
+1.类的全限定符号
+
+2.别名简称  mybatis给我们提供了72种默认的别名！
+
+这些都是我们常用的Java数据类型！【java的常用数据类型】
+
+基本数据类型 int double --> _int _double
+
+包装数据类型 Integer Double-->int integer   double        
+
+ 集合容器类型 Map List HashMap-->小写即可 map list hashmap
+
+  扩展：如果没有提供的需要自己定义或者写类的全限定符号，给自己声明的类如何定义别名
+
+mybatis-config.xml文件中，①给类单独定义别名！！！.
+
+注意这部分要写在<settings></settings>下面！！！
+
+```xml
+ <typeAliases>
+        <typeAlias type="org.example.pojo.Employee" alias="ergouzi"
+    </typeAliases>
+```
+
+   ②批量设置
+
+批量将报下的类给与别名，别名就是类的首字母小写
+
+扩展：如果不想使用批量的别名，可以使用注解给与名字。也就是在自己定义的类前面加上@Alias("ergouzi")
+
+```xml
+ <typeAliases>
+        <package name="org.example.pojo"/>
+    </typeAliases>
+```
+
+​         
+
+ ![image-20231114150011725](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231114150011725.png)
+
+![image-20231114150043689](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231114150043689.png)
+
+#### 2.2单个实体类型输出
+
+默认要求：查询，返回单个实体类型，要求列名和属性名要一致！这样才可以进行实体类的属性映射
+
+但是也可以进行设置，设置支持驼峰式自动映射！
+
+emp_id--->empId===empId
+
+mybatis-config.xml文件
+
+| **mapUnderscoreToCamelCase** | 是否开启驼峰命名自动映射，即从经典数据库列名 A_COLUMN 映射到经典 Java 属性名 aColumn。 | true \| false | False |
+| ---------------------------- | ------------------------------------------------------------ | ------------- | ----- |
+|                              |                                                              |               |       |
+
+```xml
+<setting name"mapUnderscoreToCamelCase" value="true"/>
+```
+
+#### 2.3返回Map类型
+
+适用于SQL查询返回的各个字段综合起来并不和任何一个现有的实体类对应，没法封装到实体类对象中。能够封装成实体类类型的，就不使用Map类型。
+
+当没有实体类可以使用接值的时候，我们可以使用map接受数据
+
+key->查询的列  value->查询的值
+
+```xml
+<!-- Map<String,Object> selectEmpNameAndMaxSalary(); -->
+<!-- 返回工资最高的员工的姓名和他的工资 -->
+<select id="selectEmpNameAndMaxSalary" resultType="map">
+  SELECT
+    emp_name 员工姓名,
+    emp_salary 员工工资,
+    (SELECT AVG(emp_salary) FROM t_emp) 部门平均工资
+  FROM t_emp WHERE emp_salary=(
+    SELECT MAX(emp_salary) FROM t_emp
+  )
+</select>
+```
+
+#### 2.4返回集合类型
+
+返回值试剂盒，resultType不需要指定结合类型，只需要指定泛型即可！！！
+
+![image-20231114153749992](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231114153749992.png)
+
+#### 2.5自动提交事务和自增长主键回显
+
+主键回显 获取插入数据的主键
+
+自增长主键回显 mysql auto_increment
+
+```
+//员工插入
+
+int insertEmp(Employee employee)
+
+usGeneratedKeys="true" 我们想要数据库自动增强的主键值
+keyColumn="emp_id" 主键列的值
+keyProperty="empId"接受主键劣质的属性！！！
+
+
+```
+
+![image-20231114155948808](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231114155948808.png)
+
+![image-20231114160052340](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231114160052340.png)
+
+#### 2.6非自增长类型主键维护
+
+自己维护主键是在test中写
+
+```
+String id=UUID.randomUUID().toString().replaceAll("-","")
+teacher.settId(id);
+```
+
+期望，非自增长的主键，交给mybatis帮助我们维护
+
+插入之前，先指定一段sql语句，生成一个主键值！
+
+```
+order="before|after"sql语句实在插入之前还是之后执行！
+
+resultType=返回值类型
+
+keyProperty=查询结果给哪个属性赋值
+<selectKey order="BEFORE" resultType="string" keyProperty="tId">
+SELECT REPLACE(UUID(),'-,');
+<selectKey>
+
+```
+
+#### 2.7列名和属性名不一致-自定义映射关系和resultMap初体验
+
+方案一：别名
+
+方案二：开启驼峰式映射
+
+方案三：resultMap自定义映射（resultType和resultMap二选一）
+
+resultType按照规则自动映射 按照是否开启驼峰式映射，自己映射属性和列名！只能映射一层结构！
+
+深层次的对象结构无法映射，多表查询的时候结果无法映射！
+
+resultMap标签，自定义映射关系，可以深层次可以单层次！！
+
+声明resultMap标签，自己定义映射规则
+
+id标识：select resultMap="标识"
+
+type:具体的返回值类型 全限定符和别名|集合只写泛型即可
+
+<id 主键映射关系
+
+<result 普通列的映射关系
+
+![image-20231114191805215](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231114191805215.png)
