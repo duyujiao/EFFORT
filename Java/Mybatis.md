@@ -220,7 +220,7 @@ int insertEmp(Employee employee)
 
 usGeneratedKeys="true" 我们想要数据库自动增强的主键值
 keyColumn="emp_id" 主键列的值
-keyProperty="empId"接受主键劣质的属性！！！
+keyProperty="empId"接受主键列值的属性！！！
 
 
 ```
@@ -279,3 +279,25 @@ type:具体的返回值类型 全限定符和别名|集合只写泛型即可
 <result 普通列的映射关系
 
 ![image-20231114191805215](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231114191805215.png)
+
+## 3.Mybatis多表映射
+
+#### 3.1多表映射需要我们做什么
+
+要做三件事情：
+
+1.多表查询的sql语句需要我们编写 连接查询
+
+2.自己设计存储数据的实体类 承接多个表查询的结果
+
+3.自己定义结果集映射 resultMap
+
+![image-20231115124545554](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231115124545554.png)
+
+#### 3.2多表实体类存储设计
+
+多表结果实体类设计小技巧：
+
+对一，属性中包含对方对象
+
+对多，属性中包含对方对象的集合
