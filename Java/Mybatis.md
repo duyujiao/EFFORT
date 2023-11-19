@@ -301,3 +301,43 @@ type:具体的返回值类型 全限定符和别名|集合只写泛型即可
 对一，属性中包含对方对象
 
 对多，属性中包含对方对象的集合
+
+#### 3.3对一查询实现
+
+根据ID拆线呢订单，以及订单关联的用户的信息
+
+创建resultMap实现对一关联关系映射
+
+<!-- 创建resultMap实现“对一”关联关系映射 -->
+<!-- id属性：通常设置为这个resultMap所服务的那条SQL语句的id加上“ResultMap” -->
+<!-- type属性：要设置为这个resultMap所服务的那条SQL语句最终要返回的类型 -->
+<resultMap id="selectOrderWithCustomerResultMap" type="order">
+
+第一层属性 order对象 
+
+order的主键 id标签  然后是普通列result标签    column数据库中的名字，property对应的属性名
+
+第二层：对象属性赋值 <association>
+
+property对象属性名  javaType对象类型
+
+![image-20231119132357746](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231119132357746.png)
+
+#### 3.4对多查询
+
+ <association>换成<collection>
+
+给集合属性赋值：property 集合属性名，ofType结合的泛型类型
+
+#### 3.5多表查询优化
+
+resultMap标签 有没有嵌套都会自动帮我们映射result标签的属性和列,就不用写result啦！！！
+
+<setting name="autoMappingBehavior" value="FULL"/>
+
+## 4.Mbatis动态语句
+
+### 4.1where if标签
+
+sql语句有多个条件时，如果传入属性，就判断相等
+
