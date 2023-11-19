@@ -430,3 +430,67 @@ atguigu.dev.url=jdbc:mysql:///mybatis-example?allowMultiQueries=true
 ![image-20231119165722454](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231119165722454.png)
 
 ![image-20231119165745059](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231119165745059.png)
+
+## 5.Mybatis高级扩展
+
+### 5.1批量mapper指定
+
+1.要求Mapperxml文件和mapper接口的命名必须相同
+
+2.最终打包后的位置要一致 都是指定的包地址下
+
+方案一：xml文件也加入到接口所在的包即可和修改maven的pom.xml最终把这下面的配置都打包（不推荐）
+
+方案二：在resources文件夹创建对应的文件夹结构即可，直接一口气创建多个文件夹不能用com.atiguigu.mapper,必须使用com/atiguigu/mapper
+
+![image-20231119172152085](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231119172152085.png)
+
+### 5.2插件机制和分页插件使用
+
+正常编写sql语句，不要使用;结尾
+
+调用mapper.queryList()；之前，先设置分页数据（当前是第几页，每页显示几个），这里前端会传过来
+
+将查询数据封装到一个PageInfo的分页实体类（一共有多少页，一共有多少条等等）
+
+![image-20231119174005631](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231119174005631.png)
+
+```java
+@Test
+public void testTeacherRelationshipToMulti() {
+
+    TeacherMapper teacherMapper = session.getMapper(TeacherMapper.class);
+	//先设置分页数据（当前是第几页，每页显示几个），这里前端会传过来
+    PageHelper.startPage(1,2);
+    // 查询Customer对象同时将关联的Order集合查询出来
+    //TODO:注意不能将两条查询装到一个分区页
+    List<Teacher> allTeachers = teacherMapper.findAllTeachers();
+	//将查询数据封装到一个PageInfo的分页实体类（一共有多少页，一共有多少条等等）
+    PageInfo<Teacher> pageInfo = new PageInfo<>(allTeachers);
+
+    System.out.println("pageInfo = " + pageInfo);
+    long total = pageInfo.getTotal(); // 获取总记录数
+    System.out.println("total = " + total);
+    int pages = pageInfo.getPages();  // 获取总页数
+    System.out.println("pages = " + pages);
+    int pageNum = pageInfo.getPageNum(); // 获取当前页码
+    System.out.println("pageNum = " + pageNum);
+    int pageSize = pageInfo.getPageSize(); // 获取每页显示记录数
+    System.out.println("pageSize = " + pageSize);
+    List<Teacher> teachers = pageInfo.getList(); //获取查询页的数据集合
+    System.out.println("teachers = " + teachers);
+    teachers.forEach(System.out::println);
+
+}
+```
+
+### 5.3ORM介绍和逆向工程 
+
+ORM介绍：ORM思维应用在持久层框架上，使用面向对象思维进行数据库操作
+
+![image-20231119181111614](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231119181111614.png)
+
+ 期望半自动的orm框架，也能实现单表的curd自动生成
+
+**逆向工程**：半自动orm---->全自动orm迈进，插件MybatisX实现自动生成单表的增删改查
+
