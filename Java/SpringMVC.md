@@ -84,3 +84,88 @@ account必须传递 page可以不必须传递，如果不传递默认就是1
 /param/data3?name=二狗子&age=18 准备一个对应属性和get|set方法的实体类即可！->形参列表声明对象参数即可
 
 ![image-20231121191832477](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231121191832477.png)
+
+## 3.路径 参数接收
+
+//path/账号/密码
+
+动态路径设计 {key}=*   {key}在形参列表获取传入的参数
+
+接收路径参数 String account,String password->接收param格式参数
+
+必须使用@PathVariable
+
+![image-20231121193852896](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231121193852896.png)
+
+ ![image-20231121193958233](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231121193958233.png) 
+
+## 3.json 参数接收
+
+①正常声明实体类
+
+②参数列表前加@RequestBody
+
+③导入json处理的依赖
+
+④handlerAdapter配置json转化器 @EnableWebMvc，这是交给经理
+
+添加秘书，添加经理，给经理添加jacksonjson处理器
+
+postman
+
+![image-20231121200204153](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231121200204153.png)
+
+data-->请求体 post {name,age,gender}
+
+前端--》json->415 不支持数据类型呢？？
+
+原因：Java原生的api，只支持路径参数和param参数 request.getParameter("key")；param   不支持json，json就是前端的格式
+
+解决：1.导入json处理的依赖
+
+```html
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.15.0</version>
+</dependency>
+```
+
+2.handlerAdapter配置json转化器 @EnableWebMvc
+
+## 4.接收Cookie数据
+
+@CookieValue
+
+## 5.接收请求头数据
+
+@RequestHeader
+
+## 6.原生Api对象操作
+
+![image-20231121210037091](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231121210037091.png)
+
+```java
+/**
+ * 如果想要获取请求或者响应对象,或者会话等,可以直接在形参列表传入,并且不分先后顺序!
+ * 注意: 接收原生对象,并不影响参数接收!
+ */
+@GetMapping("api")
+@ResponseBody
+public String api(HttpSession session , HttpServletRequest request,
+                  HttpServletResponse response){
+    String method = request.getMethod();
+    System.out.println("method = " + method);
+    return "api";
+}
+```
+
+## 7.共享域获取
+
+共享域的作用是提供了方便实用的方式在同一 Web 应用程序的多个组件之间传递数据，并且可以将数据保存在不同的共享域中，根据需要进行选择和使用。
+
+Model,ModelMap,Map,ModelAndView
+
+## 8.总结
+
+![](C:\Users\dyj\Pictures\Screenshots\屏幕截图 2023-11-21 214948.png)
