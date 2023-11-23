@@ -169,3 +169,55 @@ Model,ModelMap,Map,ModelAndView
 ## 8.总结
 
 ![](C:\Users\dyj\Pictures\Screenshots\屏幕截图 2023-11-21 214948.png)
+
+servlet流程
+
+![image-20231121230242394](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231121230242394.png)****
+
+# 三、SpringMVC响应数据
+
+![image-20231123204018888](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123204018888.png)
+
+## 1.转发和重定向
+
+路径细节：（不使用springmvc request response)
+
+转发是项目下的资源跳转。路径：项目下的地址 /jsp/index 忽略：applicationContext
+
+重定向项目下的资源可以是项目外的地址 重定向属于二次请求 路径：项目下的地址 全地址 不忽略/springmvc/jsp/index
+
+（ 使用springmvc路径语法）：
+
+”forward:路径|redirect:路径“ 重定向，资源的地址也不需要写项目的根路径！  /jsp/index    转发和重定向的地址都一样了！
+
+转发：方法返回值写成字符串类型；不能添加responseBody注解，返回字符串前面forward:/转发的地址
+
+重定向：方法返回值写成字符串类型；不能添加responseBody注解，返回字符串前面redirect:/重定向的地址
+
+转发这个/jsp/forward
+
+![image-20231123212759369](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123212759369.png)
+
+重定向跳转到/jsp/index
+
+![image-20231123212743728](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123212743728.png)
+
+## 2.返回json数据
+
+return user;user对象给handlerAdapter转成json，添加@ResponseBody注解，不用找视图解析器，json直接返回
+
+@Controller+@ResponseBody==@RestController 加到类上
+
+@ResponseBody 数据直接放入响应体返回！也不会在走视图解析器   快速查找视图，转发和重定向都不生效了
+
+## 3.静态资源处理
+
+![image-20231123220938187](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123220938187.png)
+
+## 四、RESTFul
+
+Http协议的标准使用方案和风格
+
+![image-20231123222133003](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123222133003.png)
+
+ 
