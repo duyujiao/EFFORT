@@ -214,10 +214,93 @@ return user;user对象给handlerAdapter转成json，添加@ResponseBody注解，
 
 ![image-20231123220938187](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123220938187.png)
 
-## 四、RESTFul
+# 四、RESTFul
 
 Http协议的标准使用方案和风格
 
 ![image-20231123222133003](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123222133003.png)
 
- 
+ ![image-20231123223959261](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123223959261.png)
+
+![image-20231123225637134](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231123225637134.png)
+
+|          |                  |                               |              |
+| -------- | ---------------- | ----------------------------- | ------------ |
+| 功能     | 接口和请求方式   | 请求参数                      | 返回值       |
+| 分页查询 | GET  /user       | page=1&size=10                | { 响应数据 } |
+| 用户添加 | POST /user       | { user 数据 }                 | {响应数据}   |
+| 用户详情 | GET /user/1      | 路径参数                      | {响应数据}   |
+| 用户更新 | PUT /user        | { user 更新数据}              | {响应数据}   |
+| 用户删除 | DELETE /user/1   | 路径参数                      | {响应数据}   |
+| 条件模糊 | GET /user/search | page=1&size=10&keywork=关键字 | {响应数据}   |
+
+# 五、异常处理
+
+## 全局异常处理器
+
+![image-20231124174651216](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231124174651216.png)
+
+![image-20231124174726118](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231124174726118.png)
+
+## 拦截器
+
+![image-20231124175539945](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231124175539945.png)
+
+多个拦截器执行顺序
+
+![image-20231124182417164](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231124182417164.png)
+
+## 参数校验
+
+@NotNull  包装类型
+
+ @NotEmpty 集合类型
+
+ @NotBlank 字符串，不为null，切不为"  "字符串
+
+![image-20231124201619206](C:\Users\dyj\AppData\Roaming\Typora\typora-user-images\image-20231124201619206.png)
+
+JSR 303 是 Java 为 Bean 数据合法性校验提供的标准框架，它已经包含在 JavaEE 6.0 标准中。JSR 303 通过在 Bean 属性上标注类似于 @NotNull、@Max 等标准的注解指定校验规则，并通过标准的验证接口对Bean进行验证。
+
+| 注解                       | 规则                                           |
+| -------------------------- | ---------------------------------------------- |
+| @Null                      | 标注值必须为 null                              |
+| @NotNull                   | 标注值不可为 null                              |
+| @AssertTrue                | 标注值必须为 true                              |
+| @AssertFalse               | 标注值必须为 false                             |
+| @Min(value)                | 标注值必须大于或等于 value                     |
+| @Max(value)                | 标注值必须小于或等于 value                     |
+| @DecimalMin(value)         | 标注值必须大于或等于 value                     |
+| @DecimalMax(value)         | 标注值必须小于或等于 value                     |
+| @Size(max,min)             | 标注值大小必须在 max 和 min 限定的范围内       |
+| @Digits(integer,fratction) | 标注值值必须是一个数字，且必须在可接受的范围内 |
+| @Past                      | 标注值只能用于日期型，且必须是过去的日期       |
+| @Future                    | 标注值只能用于日期型，且必须是将来的日期       |
+| @Pattern(value)            | 标注值必须符合指定的正则表达式                 |
+
+
+JSR 303 只是一套标准，需要提供其实现才可以使用。Hibernate Validator 是 JSR 303 的一个参考实现，除支持所有标准的校验注解外，它还支持以下的扩展注解：
+
+| 注解      | 规则                               |
+| --------- | ---------------------------------- |
+| @Email    | 标注值必须是格式正确的 Email 地址  |
+| @Length   | 标注值字符串大小必须在指定的范围内 |
+| @NotEmpty | 标注值字符串不能是空字符串         |
+| @Range    | 标注值必须在指定的范围内           |
+
+
+Spring 4.0 版本已经拥有自己独立的数据校验框架，同时支持 JSR 303 标准的校验框架。Spring 在进行数据绑定时，可同时调用校验框架完成数据校验工作。在SpringMVC 中，可直接通过注解驱动 @EnableWebMvc 的方式进行数据校验。Spring 的 LocalValidatorFactoryBean 既实现了 Spring 的 Validator 接口，也实现了 JSR 303 的 Validator 接口。只要在Spring容器中定义了一个LocalValidatorFactoryBean，即可将其注入到需要数据校验的 Bean中。Spring本身并没有提供JSR 303的实现，所以必须将JSR 303的实现者的jar包放到类路径下。
+
+配置 @EnableWebMvc后，SpringMVC 会默认装配好一个 LocalValidatorFactoryBean，通过在处理方法的入参上标注 @Validated 注解即可让 SpringMVC 在完成数据绑定后执行数据校验的工作。
+
+## 六、总结
+
+|                 |                                            |
+| --------------- | ------------------------------------------ |
+| 核心点          | 掌握目标                                   |
+| springmvc框架   | 主要作用、核心组件、调用流程               |
+| 简化参数接收    | 路径设计、参数接收、请求头接收、cookie接收 |
+| 简化数据响应    | 模板页面、转发和重定向、JSON数据、静态资源 |
+| restful风格设计 | 主要作用、具体规范、请求方式和请求参数选择 |
+| 功能扩展        | 全局异常处理、拦截器、参数校验注解         |
+
